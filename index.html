@@ -50,7 +50,7 @@ button{font-family:inherit;color:inherit}
 .banner .l{left:10px;transform:rotate(-12deg)}.banner .r{right:10px;transform:rotate(10deg)}
 .banner .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 .banner h3{margin:0;font:800 26px Unbounded;text-shadow:0 3px 10px rgba(0,0,0,.4)}
-.btnp{padding:12px 30px;border-radius:16px;border:none;background:rgba(120,105,255,.85);font-weight:800;font-size:16px;cursor:pointer;backdrop-filter:blur(6px)}
+.btnp{padding:12px 30px;border-radius:16px;border:none;background:rgba(120,105,255,.85);font-weight:800;font-size:16px;cursor:pointer}
 
 /* chips */
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 0 6px}
@@ -64,7 +64,7 @@ h2 small{font:700 14px Manrope;color:var(--muted);margin-left:6px}
 .ccard{border-radius:22px;background:var(--card);border:1px solid var(--line);overflow:hidden;cursor:pointer;transition:transform .12s}
 .ccard:active{transform:scale(.97)}
 .art{position:relative;aspect-ratio:1/.9;overflow:hidden}
-.art .rays{position:absolute;inset:-30%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.1) 0 7deg,transparent 7deg 20deg);animation:spin 40s linear infinite}
+.art .rays{position:absolute;inset:-30%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.1) 0 7deg,transparent 7deg 20deg)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .art .glow{position:absolute;inset:0}
 .art .it{position:absolute;border-radius:14px;overflow:hidden;box-shadow:0 8px 18px rgba(0,0,0,.45);display:grid;place-items:center;background:#000}
@@ -73,7 +73,7 @@ h2 small{font:700 14px Manrope;color:var(--muted);margin-left:6px}
 .art .i0{width:56%;height:62%;left:22%;top:16%;z-index:3;border:3px solid rgba(255,255,255,.85)}
 .art .i1{width:34%;height:38%;left:4%;top:6%;transform:rotate(-14deg);z-index:2}
 .art .i2{width:34%;height:38%;right:4%;bottom:6%;transform:rotate(12deg);z-index:2}
-.art .bdg{position:absolute;top:10px;left:10px;z-index:5;padding:5px 10px;border-radius:12px;background:rgba(20,18,40,.7);font-weight:800;font-size:13px;backdrop-filter:blur(4px)}
+.art .bdg{position:absolute;top:10px;left:10px;z-index:5;padding:5px 10px;border-radius:12px;background:rgba(20,18,40,.7);font-weight:800;font-size:13px}
 .cfoot{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:12px}
 .cfoot .cname{min-width:0;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:380px){.topup{padding:0 12px;font-size:13px}.logo{font-size:18px}.cfoot{flex-direction:column;align-items:flex-start}}
@@ -85,7 +85,8 @@ h2 small{font:700 14px Manrope;color:var(--muted);margin-left:6px}
 .back{display:inline-flex;align-items:center;gap:6px;border:none;background:var(--card);padding:10px 14px;border-radius:14px;font-weight:800;cursor:pointer;margin:4px 0 12px}
 .bigart{border-radius:24px;overflow:hidden;margin-bottom:14px}
 .strip{position:relative;height:178px;border-radius:22px;overflow:hidden;background:var(--card);border:1px solid var(--line)}
-.track{position:absolute;top:12px;left:0;display:flex;gap:8px;will-change:transform}
+.track{position:absolute;top:12px;left:0;display:flex;gap:8px;will-change:transform;transform:translateZ(0);backface-visibility:hidden}
+.track .icard .pic{background:none}
 .marker{position:absolute;top:0;bottom:0;left:50%;width:3px;margin-left:-1.5px;background:var(--gold);box-shadow:0 0 14px var(--gold);z-index:2}
 .marker::before,.marker::after{content:"";position:absolute;left:50%;transform:translateX(-50%);border:8px solid transparent}
 .marker::before{top:0;border-top-color:var(--gold)}.marker::after{bottom:0;border-bottom-color:var(--gold)}
@@ -161,7 +162,7 @@ input[type=text],select{height:44px;background:var(--card2);border:1px solid var
 .feed b{color:var(--text)}.feed .w{color:var(--green);font-weight:800}.feed .l{color:#ff6b81;font-weight:800}
 
 /* bottom nav */
-.nav{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:40;width:min(540px,calc(100% - 20px));display:flex;gap:4px;padding:6px;border-radius:28px;background:rgba(30,33,54,.92);backdrop-filter:blur(14px);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.nav{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:40;width:min(540px,calc(100% - 20px));display:flex;gap:4px;padding:6px;border-radius:28px;background:rgba(30,33,54,.92);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.4)}
 .nav button{position:relative;flex:1;height:52px;border:none;border-radius:22px;background:none;font-weight:800;font-size:13px;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .nav button i{font-style:normal;font-size:18px}
 .nav button.on{background:var(--card2);color:var(--text)}
@@ -361,6 +362,14 @@ function dbAll(){return new Promise(res=>{if(!db)return res([]);try{const q=db.t
 function dbPut(o){if(!db)return;try{db.transaction('pack','readwrite').objectStore('pack').put({id:o.id,name:o.name,r:o.r,kind:o.kind,blob:o.blob,ord:o.ord})}catch(e){}}
 function dbDel(id){if(!db)return;try{db.transaction('pack','readwrite').objectStore('pack').delete(id)}catch(e){}}
 const IMG=/\.(png|jpe?g|gif|webp|avif)$/i,VID=/\.(mp4|webm|mov|m4v)$/i;
+const loadImg=src=>new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=rej;im.src=src});
+async function makeThumb(it){
+  const base=decodeURIComponent(it.url.split('/').pop()).replace(/\.[^.]+$/,'');
+  try{await loadImg('memes/thumbs/'+encodeURIComponent(base)+'.webp');it.th='memes/thumbs/'+encodeURIComponent(base)+'.webp';return}catch(e){}
+  try{const im=await loadImg(it.url),k=Math.min(1,240/Math.max(im.width,im.height)),c=document.createElement('canvas');
+    c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    const b=await new Promise(r=>c.toBlob(r,'image/jpeg',.82));if(b)it.th=URL.createObjectURL(b)}
+  catch(e){PACK=PACK.filter(x=>x!==it)}}
 async function loadRepo(){
   let man=null;try{const r=await fetch('memes/manifest.json',{cache:'no-cache'});if(r.ok)man=await r.json()}catch(e){}
   let files=null;
@@ -374,13 +383,15 @@ async function loadRepo(){
     if(IMG.test(f)){const e=entries.find(x=>x.file===f)||entries.find(x=>x.match&&f.includes(x.match));
       if(e)used.add(e);PACK.push({id:'m:'+(e?e.file:f),name:e?e.name:f.replace(/\.[^.]+$/,''),r:e?e.rarity:AUTO_R[ai++%AUTO_R.length],kind:'img',url:'memes/'+encodeURIComponent(f),repo:true})}
     else if(VID.test(f))PACK.push({id:'m:'+f,name:f.replace(/\.[^.]+$/,''),r:0,kind:'vid',url:'memes/'+encodeURIComponent(f),repo:true})});
-  await Promise.all(PACK.filter(p=>p.repo&&p.kind==='img').map(it=>new Promise(res=>{const im=new Image();im.onload=()=>res();im.onerror=()=>{PACK=PACK.filter(x=>x!==it);res()};im.src=it.url})));
+  // маленькие превью: готовые из memes/thumbs, а если их нет — делаем сами из картинки (на телефоне большие картинки тормозят)
+  const imgs=PACK.filter(p=>p.repo&&p.kind==='img');
+  for(let i=0;i<imgs.length;i+=4)await Promise.all(imgs.slice(i,i+4).map(makeThumb));
   packSource=PACK.some(p=>p.repo)?`Мемы берутся из папки <b>memes</b> на GitHub: ${PACK.filter(p=>p.repo&&p.kind==='img').length} картинок, ${PACK.filter(p=>p.repo&&p.kind==='vid').length} видео. Чтобы добавить новые, просто закинь файлы в эту папку.`:'';
 }
 const pool=()=>{const im=PACK.filter(p=>p.kind==='img');return im.length?im:DEF};
 const vids=()=>PACK.filter(p=>p.kind==='vid');
 const itemById=id=>PACK.find(p=>p.id===id)||DEF.find(d=>d.id===id);
-const vis=it=>!it?'<span class="emo">❓</span>':it.url?`<img src="${it.url}" alt="" loading="lazy">`:`<span class="emo">${it.e}</span>`;
+const vis=(it,big)=>!it?'<span class="emo">❓</span>':it.url?`<img src="${big||!it.th?it.url:it.th}" alt="" decoding="async">`:`<span class="emo">${it.e}</span>`;
 function icard(it,{price,chance,sel}={}){const r=R[it?it.r:0];
   return `<div class="icard${sel?' sel':''}" style="--rc:${r.c}"><div class="pic">${vis(it)}</div><div class="bar"></div><div class="meta"><div class="nm">${esc(it?it.name:'???')}</div>${price!=null?`<div class="pr">${fmt(price)}</div>`:chance!=null?`<div class="ch">${chance}</div>`:`<div class="ch" style="color:${r.c}">${r.n}</div>`}</div></div>`}
 const avaHTML=p=>p.avatar?`<img src="${p.avatar}" alt="">`:esc(p.name[0]);
@@ -478,7 +489,7 @@ function renderMore(){
   $('packSrc').innerHTML=packSource||'Своей папки с мемами на GitHub пока нет, поэтому мемы можно добавить прямо отсюда.';
   const L=$('packList');L.innerHTML='';
   PACK.forEach(it=>{const d=document.createElement('div');d.className='prow';
-    d.innerHTML=`<div class="th">${it.kind==='img'?`<img src="${it.url}" loading="lazy">`:`<video src="${it.url}" muted preload="metadata"></video>`}</div>`+
+    d.innerHTML=`<div class="th">${it.kind==='img'?`<img src="${it.th||it.url}" loading="lazy">`:`<video src="${it.url}" muted preload="metadata"></video>`}</div>`+
       (it.repo?`<div style="flex:1"><b>${esc(it.name)}</b><div style="font-size:12px;color:${R[it.r].c}">${it.kind==='img'?R[it.r].n:'🎬 нарезка'}</div></div><span class="tag">GitHub</span>`
       :`<input type="text" value="${esc(it.name)}" maxlength="40">${it.kind==='img'?`<select>${R.map((r,i)=>`<option value="${i}"${i===it.r?' selected':''}>${r.n}</option>`).join('')}</select>`:'<span class="hint" style="margin:0">🎬</span>'}<button class="del">✕</button>`);
     if(!it.repo){d.querySelector('input').onchange=e=>{it.name=e.target.value.trim()||it.name;dbPut(it)};
@@ -519,19 +530,23 @@ $('caseBack').onclick=()=>{if(!opening)go('cases')};
 $('fast').onclick=()=>{S.meta.fast=!S.meta.fast;save();renderCase()};
 $('openBtn').onclick=()=>{
   const c=curCase,p=P();if(opening||!c)return;if(p.bal<c.price)return toast('Не хватает монет. Открой бесплатный и продай что-нибудь');
-  p.bal-=c.price;const win=pickItem(c.w),WI=46,N=54;let h='';for(let i=0;i<N;i++)h+=icard(i===WI?win:pickItem(c.w));
-  const tr=$('ctrack');tr.innerHTML=h;const fast=!!S.meta.fast,dur=fast?1.1:5.2,cw=128,sw=$('cstrip').clientWidth,off=WI*cw+60-sw/2+(Math.random()-.5)*90;
-  tr.style.transition='none';tr.style.transform='translateX(0)';tr.offsetWidth;tr.style.transition=`transform ${dur}s cubic-bezier(.08,.7,.12,1)`;tr.style.transform=`translateX(${-off}px)`;
-  opening=true;haptic('medium');renderHdr();renderCase();
+  p.bal-=c.price;const win=pickItem(c.w),WI=30,N=36;let h='';for(let i=0;i<N;i++)h+=icard(i===WI?win:pickItem(c.w));
+  opening=true;haptic('medium');renderHdr();$('openBtn').disabled=true;
+  const tr=$('ctrack');tr.style.transition='none';tr.style.transform='translateX(0)';tr.innerHTML=h;
+  const fast=!!S.meta.fast,dur=fast?1.1:5.2,cw=128,sw=$('cstrip').clientWidth,off=WI*cw+60-sw/2+(Math.random()-.5)*90;
+  // сначала дать картинкам раскодироваться, потом крутить — иначе на телефоне лента дёргается
+  const ready=Promise.all([...tr.querySelectorAll('img')].map(i=>i.decode?i.decode().catch(()=>{}):0));
+  Promise.race([ready,new Promise(r=>setTimeout(r,700))]).then(()=>requestAnimationFrame(()=>{
+  tr.offsetWidth;tr.style.transition=`transform ${dur}s cubic-bezier(.08,.7,.12,1)`;tr.style.transform=`translateX(${-off}px)`;
   setTimeout(()=>{
     const r=R[win.r],price=Math.round(r.p*(.8+Math.random()*.4)),uid='i'+Date.now()+Math.random().toString(36).slice(2,6);
     p.inv.push({uid,itemId:win.id,price});p.cases++;p.last=[win.id,...p.last].slice(0,10);S.live=[{pid:p.id,itemId:win.id,price,t:Date.now()},...S.live].slice(0,20);
     if(win.r===4)found('gold');if(p.cases>=100)found('case100');if(p.last.length>=3&&p.last[0]===p.last[1]&&p.last[1]===p.last[2])found('triple');
     opening=false;save();render();haptic(win.r>=3?'heavy':'light');
-    const show=()=>{if(win.r>=2||!fast)overlay({vis:vis(win),rc:r.c,title:r.n.toUpperCase(),text:`${p.name} выбил «${win.name}» за ${fmt(price)} 🪙`,
+    const show=()=>{if(win.r>=2||!fast)overlay({vis:vis(win,true),rc:r.c,title:r.n.toUpperCase(),text:`${p.name} выбил «${win.name}» за ${fmt(price)} 🪙`,
       buttons:[{t:'Забрать'},{t:`Продать за ${fmt(price)}`,c:'',fn:()=>sellUids(p,[uid])}]})};
     maybeClip(win.r>=3?true:.2,show);
-  },dur*1000+80)};
+  },dur*1000+80)}))};
 
 /* ===== inventory ===== */
 function sellUids(p,uids){let sum=0,gold=false;p.inv=p.inv.filter(x=>{if(uids.includes(x.uid)){sum+=x.price;const it=itemById(x.itemId);if(it&&it.r===4)gold=true;SEL.delete(x.uid);return false}return true});
