@@ -4,13 +4,13 @@
     {
       "file": "malyshochek.png",
       "match": "193935",
-      "name": "Вкусненький малышочек",
+      "name": "Зайчик бурмалдайчик",
       "rarity": 4
     },
     {
       "file": "tazik.png",
       "match": "195106",
-      "name": "В тазике",
+      "name": "Я помылся",
       "rarity": 4
     },
     {
@@ -40,13 +40,13 @@
     {
       "file": "voznya.png",
       "match": "195338",
-      "name": "Пошла возня",
+      "name": "Я уже красный",
       "rarity": 2
     },
     {
       "file": "kachok.png",
       "match": "195317",
-      "name": "Качок из Мытищ",
+      "name": "МОГ",
       "rarity": 2
     },
     {
@@ -64,13 +64,13 @@
     {
       "file": "plaki.png",
       "match": "195300",
-      "name": "Плаки-плаки",
+      "name": "Ам-ам-ам",
       "rarity": 1
     },
     {
       "file": "zanos.png",
       "match": "195214",
-      "name": "Занос в Мурино",
+      "name": "Танцуют все",
       "rarity": 1
     },
     {
@@ -88,13 +88,13 @@
     {
       "file": "eldzheevka.png",
       "match": "195134",
-      "name": "Сезон Элджеевки",
+      "name": "Мелл",
       "rarity": 0
     },
     {
       "file": "67.png",
       "match": "195119",
-      "name": "Шесть-семь",
+      "name": "Хз кто это",
       "rarity": 0
     }
   ],
