@@ -318,18 +318,18 @@ const rnd=a=>a[Math.floor(Math.random()*a.length)];
 (function(el,n){for(let i=0;i<n;i++){const s=document.createElement('div'),z=Math.random();s.style.cssText=`position:absolute;left:${Math.random()*100}%;top:${Math.random()*100}%;width:${z*2.2+.6}px;height:${z*2.2+.6}px;border-radius:50%;background:#fff;opacity:${.25+z*.75};animation:tw ${2+Math.random()*4}s ease-in-out ${Math.random()*4}s infinite alternate`;el.appendChild(s)}})($('ovStars'),200);
 
 /* ===== data ===== */
-const R=[{n:'Ширпотреб',c:'#4b69ff',p:15},{n:'Армейское',c:'#8847ff',p:60},{n:'Запрещённое',c:'#d32ce6',p:200},{n:'Тайное',c:'#eb4b4b',p:800},{n:'Голда',c:'#e4ae39',p:4000}];
+const R=[{n:'Ширпотреб',c:'#4b69ff',p:15},{n:'Армейское',c:'#8847ff',p:60},{n:'Запрещённое',c:'#d32ce6',p:200},{n:'Тайное',c:'#eb4b4b',p:800},{n:'Легенда',c:'#e4ae39',p:4000}];
 const CASES=[
   {id:'free',name:'Бесплатный',price:0,w:[60,25,10,4,1],bg:['#ff9a3d','#ff4f8b'],tag:'free'},
   {id:'murino',name:'Мурино',price:150,w:[50,30,13,5,2],bg:['#3dd6ff','#5a5cff']},
   {id:'voznya',name:'Пошла возня',price:400,w:[35,35,18,9,3],bg:['#ff5a5a','#a83dff']},
-  {id:'gold',name:'Голд кейс',price:600,w:[25,33,22,14,6],bg:['#ffd84a','#ff8a2b']},
+  {id:'gold',name:'Легендарный',price:600,w:[25,33,22,14,6],bg:['#ffd84a','#ff8a2b']},
   {id:'lux',name:'Только редкие',price:1500,w:[0,0,55,35,10],bg:['#ff3dbd','#7a2bff'],badge:'🔥 Хайроллер'},
 ];
 const DEF=[{id:'d0',name:'Носок',e:'🧦',r:0},{id:'d1',name:'Картошка',e:'🥔',r:0},{id:'d2',name:'Тапок',e:'🩴',r:0},{id:'d3',name:'Чайник',e:'🫖',r:1},{id:'d4',name:'Жаба',e:'🐸',r:1},{id:'d5',name:'Шаурма',e:'🌯',r:2},{id:'d6',name:'Корона',e:'👑',r:3},{id:'d7',name:'Бриллиант',e:'💎',r:4}];
 const AUTO_R=[0,1,0,2,0,1,3,0,1,2,0,4,1,0,2];
 const COLORS=['#ff7ab0','#5ee0ff','#ffcf4a','#7cff9b','#ff9a5a','#b99bff','#ff6b81','#7ab8ff'];
-const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая голда',goldsold:'Продал голду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',mama:'Мама, дай денег',spam:'Пополнятор'};
+const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',mama:'Мама, дай денег',spam:'Пополнятор'};
 const BONUS=200,BONUS_CD=5*60*1000;
 
 /* ===== state ===== */
