@@ -198,11 +198,6 @@ input[type=text],select{height:44px;background:var(--card2);border:1px solid var
 .ovtext{font-size:clamp(16px,3.4vw,20px);line-height:1.4;margin:0 0 20px}
 .ovbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .ovbtns .btn{height:52px;padding:0 24px;font-size:16px}
-#vidov{position:fixed;inset:0;z-index:80;background:#000;display:none;place-items:center}
-#vidov.show{display:grid}#vidov video{max-width:100vw;max-height:100vh}
-#vidov .skip{position:absolute;top:16px;right:16px;z-index:2}
-#emb{display:none;width:min(100vw,900px);aspect-ratio:16/9}#emb iframe{width:100%;height:100%;border:0}
-.vhint{display:none;position:absolute;bottom:22px;left:0;right:0;text-align:center;color:var(--muted);font-size:13px}
 #toast{position:fixed;left:50%;top:14px;transform:translateX(-50%) translateY(-120px);z-index:90;background:#262a45;border:1px solid var(--acc2);border-radius:16px;padding:12px 18px;font-weight:800;transition:transform .35s;max-width:90vw;text-align:center}
 #toast.show{transform:translateX(-50%) translateY(0)}
 .shake{animation:shake .4s}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
@@ -266,7 +261,7 @@ input[type=text],select{height:44px;background:var(--card2);border:1px solid var
     <div class="stat"><div><b id="invVal">0</b><span>стоимость, монет</span></div><div><b id="invCnt">0</b><span>мемов</span></div></div>
     <div class="row" style="margin-bottom:12px">
       <button class="btn acc" id="sellSel">Продать выбранное</button>
-      <button class="btn" id="sellCheap">Продать ширпотреб</button>
+      <button class="btn" id="sellCheap">Продать «Известных»</button>
       <button class="btn" id="selAll">Выбрать всё</button>
     </div>
     <div class="igrid" id="invGrid"></div>
@@ -276,10 +271,9 @@ input[type=text],select{height:44px;background:var(--card2);border:1px solid var
   <div class="pg" id="pg-more">
     <h2>Пак мемов</h2>
     <div class="hint" id="packSrc"></div>
-    <div class="drop" id="drop"><b>Добавить мемы с телефона</b>Картинки станут предметами в кейсах, видео будут проигрываться при выпадении. Хранятся только в этом браузере.</div>
-    <input type="file" id="packFile" accept="image/*,video/*" multiple hidden>
+    <div class="drop" id="drop"><b>Добавить мемы с телефона</b>Картинки станут предметами в кейсах. Хранятся только в этом браузере.</div>
+    <input type="file" id="packFile" accept="image/*" multiple hidden>
     <div class="plist" id="packList" style="margin-top:12px"></div>
-    <div class="prow" id="clipsRow" style="margin-top:12px;cursor:pointer"><span style="font-size:24px">🎬</span><b style="flex:1">Видео-мемы при выигрыше и проигрыше</b><span class="tag" id="clipsTag">ВКЛ</span></div>
     <h2>Игроки</h2>
     <div class="hint" style="margin-top:-4px">Нажми на кружок, чтобы поставить аватарку. Новое имя само превращается в «-ость».</div>
     <div class="plist" id="plList"></div>
@@ -306,7 +300,6 @@ input[type=text],select{height:44px;background:var(--card2);border:1px solid var
 </div></div>
 <div class="sheetbg" id="sheetbg"><div class="sheet" id="sheet"></div></div>
 <div class="ov" id="ov"><div class="ovst" id="ovStars"></div><div class="ovcard"><div class="ovvis" id="ovVis"></div><h2 class="ovtitle" id="ovTitle"></h2><p class="ovtext" id="ovText"></p><div class="ovbtns" id="ovBtns"></div></div></div>
-<div id="vidov"><video id="vid" playsinline></video><div id="emb"></div><div class="vhint" id="vhint">не играет? нажми ▶ в плеере</div><button class="btn skip" id="skip">скип ⏭</button></div>
 <div id="toast"></div>
 <input type="file" id="avaFile" accept="image/*" hidden>
 
@@ -319,7 +312,7 @@ const rnd=a=>a[Math.floor(Math.random()*a.length)];
 (function(el,n){for(let i=0;i<n;i++){const s=document.createElement('div'),z=Math.random();s.style.cssText=`position:absolute;left:${Math.random()*100}%;top:${Math.random()*100}%;width:${z*2.2+.6}px;height:${z*2.2+.6}px;border-radius:50%;background:#fff;opacity:${.25+z*.75};animation:tw ${2+Math.random()*4}s ease-in-out ${Math.random()*4}s infinite alternate`;el.appendChild(s)}})($('ovStars'),200);
 
 /* ===== data ===== */
-const R=[{n:'Ширпотреб',c:'#4b69ff',p:15},{n:'Армейское',c:'#8847ff',p:60},{n:'Запрещённое',c:'#d32ce6',p:200},{n:'Тайное',c:'#eb4b4b',p:800},{n:'Легенда',c:'#e4ae39',p:4000}];
+const R=[{n:'Известный',c:'#4b69ff',p:15},{n:'Азпвзхап',c:'#8847ff',p:60},{n:'Додеп',c:'#d32ce6',p:200},{n:'Тайное',c:'#eb4b4b',p:800},{n:'Легенда',c:'#e4ae39',p:4000}];
 const CASES=[
   {id:'free',name:'Бесплатный',price:0,w:[60,25,10,4,1],bg:['#ff9a3d','#ff4f8b'],tag:'free'},
   {id:'murino',name:'Мурино',price:150,w:[50,30,13,5,2],bg:['#3dd6ff','#5a5cff']},
@@ -382,11 +375,11 @@ async function loadRepo(){
   files.forEach(f=>{
     if(IMG.test(f)){const e=entries.find(x=>x.file===f)||entries.find(x=>x.match&&f.includes(x.match));
       if(e)used.add(e);PACK.push({id:'m:'+(e?e.file:f),name:e?e.name:f.replace(/\.[^.]+$/,''),r:e?e.rarity:AUTO_R[ai++%AUTO_R.length],kind:'img',url:'memes/'+encodeURIComponent(f),repo:true})}
-    else if(VID.test(f))PACK.push({id:'m:'+f,name:f.replace(/\.[^.]+$/,''),r:0,kind:'vid',url:'memes/'+encodeURIComponent(f),repo:true})});
+  });
   // маленькие превью: готовые из memes/thumbs, а если их нет — делаем сами из картинки (на телефоне большие картинки тормозят)
   const imgs=PACK.filter(p=>p.repo&&p.kind==='img');
   for(let i=0;i<imgs.length;i+=4)await Promise.all(imgs.slice(i,i+4).map(makeThumb));
-  packSource=PACK.some(p=>p.repo)?`Мемы берутся из папки <b>memes</b> на GitHub: ${PACK.filter(p=>p.repo&&p.kind==='img').length} картинок, ${PACK.filter(p=>p.repo&&p.kind==='vid').length} видео. Чтобы добавить новые, просто закинь файлы в эту папку.`:'';
+  packSource=PACK.some(p=>p.repo)?`Мемы берутся из папки <b>memes</b> на GitHub: ${PACK.filter(p=>p.repo&&p.kind==='img').length} картинок. Чтобы добавить новые, просто закинь файлы в эту папку.`:'';
 }
 const pool=()=>{const im=PACK.filter(p=>p.kind==='img');return im.length?im:DEF};
 const vids=()=>PACK.filter(p=>p.kind==='vid');
@@ -409,21 +402,8 @@ function nextOv(){const o=Q.shift();if(!o){ovOpen=false;$('ov').classList.remove
   $('ov').classList.add('show')}
 const emojiOv=e=>`<span class="emo">${e}</span>`;
 const playerOv=p=>`<div style="width:100%;height:100%;display:grid;place-items:center;background:${p.color};font:800 100px Unbounded;color:#14112b">${avaHTML(p)}</div>`;
-let vidDone=null,vidCap;
-// видео-нарезки: свои mp4 из папки memes + встроенный плеер VK Видео (случайный момент сборника)
-let EMBEDS=[{url:'https://vkvideo.ru/video_ext.php?oid=-240783119&id=456239057&hash=e7cfebaa1b26cfcf',duration:133}];
-function maybeClip(chance,cb){
-  const ch=chance===true?1:(chance||0),srcs=[...vids().map(v=>({t:'vid',v})),...EMBEDS.map(e=>({t:'emb',e}))];
-  if(S.meta.clipsOff||!srcs.length||vidDone||Math.random()>=ch)return cb&&cb();
-  const pick=rnd(srcs);vidDone=cb||(()=>{});$('vidov').classList.add('show');clearTimeout(vidCap);
-  if(pick.t==='vid'){const el=$('vid');el.style.display='';$('emb').style.display='none';$('vhint').style.display='none';el.src=pick.v.url;el.muted=false;
-    const pr=el.play();if(pr&&pr.catch)pr.catch(()=>{el.muted=true;el.play().catch(endClip)});vidCap=setTimeout(endClip,20000)}
-  else{const e=pick.e,st=Math.floor(Math.random()*Math.max(1,(e.duration||60)-9)),sep=e.url.includes('?')?'&':'?';
-    $('vid').style.display='none';$('emb').style.display='block';$('vhint').style.display='block';
-    $('emb').innerHTML=`<iframe src="${e.url}${sep}autoplay=1&t=${Math.floor(st/60)}m${st%60}s" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>`;
-    vidCap=setTimeout(endClip,(e.clip||9)*1000)}}
-function endClip(){const el=$('vid');el.pause();$('emb').innerHTML='';$('vidov').classList.remove('show');clearTimeout(vidCap);const f=vidDone;vidDone=null;f&&f()}
-$('vid').onended=endClip;$('skip').onclick=endClip;
+function maybeClip(chance,cb){cb&&cb()}
+
 function sheet(html){$('sheet').innerHTML=html;$('sheetbg').classList.add('show')}
 const closeSheet=()=>$('sheetbg').classList.remove('show');
 $('sheetbg').onclick=e=>{if(e.target===$('sheetbg'))closeSheet()};
@@ -485,7 +465,6 @@ function renderPot(){const L=$('potList'),tot=potTotal();
 const BETS=[50,100,250,500,'ВСЁ'];
 function renderBets(){const b=$('bets');b.innerHTML='';BETS.forEach(v=>{const x=document.createElement('button');x.textContent=v;if(S.bet===v)x.className='sel';x.onclick=()=>{S.bet=v;save();renderBets()};b.appendChild(x)})}
 function renderMore(){
-  $('clipsTag').textContent=S.meta.clipsOff?'ВЫКЛ':'ВКЛ';$('clipsTag').style.opacity=S.meta.clipsOff?.5:1;
   $('packSrc').innerHTML=packSource||'Своей папки с мемами на GitHub пока нет, поэтому мемы можно добавить прямо отсюда.';
   const L=$('packList');L.innerHTML='';
   PACK.forEach(it=>{const d=document.createElement('div');d.className='prow';
@@ -626,7 +605,7 @@ $('packFile').onchange=async e=>{const files=[...e.target.files];let ni=PACK.fil
     if(f.type.startsWith('image/')){const b=await shrink(f,420);if(!b)continue;const m=MAN&&MAN.items.find(x=>f.name.includes(x.match)||f.name===x.file);
       const it={id:'p'+(ord++)+Math.random().toString(36).slice(2,5),name:m?m.name:'Мем #'+(ni+1),r:m?m.rarity:AUTO_R[ni%AUTO_R.length],kind:'img',blob:b,ord,url:URL.createObjectURL(b)};ni++;PACK.push(it);dbPut(it)}
     else if(f.type.startsWith('video/')){const it={id:'v'+(ord++)+Math.random().toString(36).slice(2,5),name:f.name.replace(/\.[^.]+$/,''),r:0,kind:'vid',blob:f,ord,url:URL.createObjectURL(f)};PACK.push(it);dbPut(it);nv++}}
-  render();toast(`Загружено: ${files.length-nv} картинок, ${nv} видео`)};
+  render();toast(`Загружено картинок: ${files.length-nv}`)};
 let avaFor=null;
 $('avaFile').onchange=async e=>{const f=e.target.files[0];if(!f||avaFor===null)return;const b=await shrink(f,200);if(!b)return;const rd=new FileReader();rd.onload=()=>{S.players[avaFor].avatar=rd.result;save();render();toast('Аватарка поставлена')};rd.readAsDataURL(b)};
 function addPlayer(v){const r=toOst(v||'');if(!r)return;S.players.push(mkPlayer(r.name,S.players.length));if(r.egg){found('ostost');toast('Ость в квадрате: '+r.name)}else toast('Добро пожаловать, '+r.name);save();render()}
@@ -634,7 +613,6 @@ $('addBtn').onclick=()=>{addPlayer($('newName').value);$('newName').value=''};$(
 let rs=false,rst;$('resetBtn').onclick=()=>{if(!rs){rs=true;$('resetBtn').textContent='Точно? Жми ещё раз';rst=setTimeout(()=>{rs=false;$('resetBtn').textContent='Обнулить игру'},3000);return}
   clearTimeout(rst);rs=false;$('resetBtn').textContent='Обнулить игру';const meta=S.meta;S=defaultState();S.meta=meta;SEL.clear();save();render();toast('Игра обнулена. Мемы остались')};
 
-$('clipsRow').onclick=()=>{S.meta.clipsOff=!S.meta.clipsOff;save();renderMore()};
 /* ===== welcome ===== */
 function showWelcome(){const w=$('welcome');if(w.classList.contains('show'))return;w.classList.add('show');
   const i=$('wName');if(tgName&&!i.value){i.value=tgName;i.oninput()}setTimeout(()=>i.focus(),100)}
@@ -647,7 +625,6 @@ render();
 (async()=>{
   try{const r=await fetch('memes/manifest.json',{cache:'no-cache'});if(r.ok)MAN=await r.json()}catch(e){}
   if(!MAN)MAN=BUILTIN_MAN;
-  if(MAN&&Array.isArray(MAN.embeds)&&MAN.embeds.length)EMBEDS=MAN.embeds;
   await loadRepo();await openDB();const rows=await dbAll();
   PACK.push(...rows.sort((a,b)=>(a.ord||0)-(b.ord||0)).map(o=>({...o,url:URL.createObjectURL(o.blob)})));
   S.players.forEach(p=>{p.inv=(p.inv||[]).filter(x=>itemById(x.itemId));p.last=(p.last||[]).filter(id=>itemById(id))});
