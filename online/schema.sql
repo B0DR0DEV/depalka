@@ -14,6 +14,8 @@ create table if not exists public.players (
   best_img text,
   updated_at timestamptz not null default now()
 );
+alter table public.players add column if not exists wealth bigint not null default 0;
+create index if not exists players_wealth on public.players (wealth desc);
 alter table public.players enable row level security;
 drop policy if exists "players read" on public.players;
 drop policy if exists "players insert own" on public.players;

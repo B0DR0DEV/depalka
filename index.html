@@ -262,8 +262,17 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
   <div class="pg on" id="pg-cases">
     <div class="banner" id="bannerBattle"><div class="l">🎁</div><div class="r">💸</div><div class="c"><h3>Кейс-батл</h3><button class="btnp">Играть</button></div></div>
     <div class="tgrow"><a class="tglink" data-tg="channel" target="_blank" rel="noopener">📢 Паки в канале</a><a class="tglink" data-tg="bot" target="_blank" rel="noopener">🎟 Промокоды<span class="soon">скоро</span></a></div>
+    <div class="tglink" id="topTile" style="display:flex;width:100%;margin:-6px 0 14px;cursor:pointer">🏆 Таблица лидеров</div>
     <div class="chips" id="chips"></div>
     <div id="caseList"></div>
+  </div>
+
+  <!-- TOP -->
+  <div class="pg" id="pg-top">
+    <button class="back" id="topBack">‹ Назад</button>
+    <h2 style="margin-top:0">🏆 Таблица лидеров</h2>
+    <div class="seg" id="topSeg"><button data-v="wealth" class="on">💰 Богачи</button><button data-v="cases">🎁 Кейсоманы</button><button data-v="best">💎 Лучший дроп</button></div>
+    <div class="plist" id="topList"></div>
   </div>
 
   <!-- CASE DETAIL -->
@@ -279,7 +288,8 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
 
   <!-- BATTLE -->
   <div class="pg" id="pg-battle">
-    <div class="seg" data-seg="battle"><button data-v="dep">💸 Деп-батл</button><button data-v="cb">⚔️ Кейс-батл</button></div>
+    <div class="seg" data-seg="battle"><button data-v="dep">💸 Деп-батл</button><button data-v="cb">⚔️ Кейс-батл</button><button data-v="online">🌐 С друзьями</button></div>
+    <div class="sub" data-sub="battle:online"><div id="onBox"></div><div id="onArena" style="margin-top:12px"></div></div>
     <div class="sub" data-sub="battle:cb">
       <div class="hint" style="margin-top:0">Выбери кейсы (до 5 раундов) и сколько соперников. Все открывают одни и те же кейсы, и у кого сумма дропов больше, тот забирает <b>всё</b>, что выпало у всех.</div>
       <div class="box">
@@ -451,9 +461,11 @@ const CSITEMS=[
 ].map(([name,type,cols,r],i)=>({id:'cs'+i,name,r,set:'cs',kind:'img',url:gunSVG(type,cols,R[r].c)}));
 const AUTO_R=[0,1,0,2,0,1,3,0,1,2,0,4,1,0,2];
 const COLORS=['#ff7ab0','#5ee0ff','#ffcf4a','#7cff9b','#ff9a5a','#b99bff','#ff6b81','#7ab8ff'];
-const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',pack:'Коллекционер паков',botwin:'Ограблен ботом',cbwin:'Разнёс трёх ботов в кейс-батле',up20:'Апгрейд ×20',crash10:'Улетел за ×10',crashboom:'Взрыв на старте',contract:'Подписал контракт',donat:'Донатер',mama:'Мама, дай денег',spam:'Пополнятор'};
+const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',pack:'Коллекционер паков',botwin:'Ограблен ботом',cbwin:'Разнёс трёх ботов в кейс-батле',onlinewin:'Обыграл друзей онлайн',up20:'Апгрейд ×20',crash10:'Улетел за ×10',crashboom:'Взрыв на старте',contract:'Подписал контракт',donat:'Донатер',mama:'Мама, дай денег',spam:'Пополнятор'};
 // Telegram: поменяй тут, если ники заняты
 const TG={bot:'depost_promo_bot',channel:'depost_packs'};
+// Онлайн (Supabase): вставь Project URL и anon/publishable ключ. Пусто — онлайн выключен.
+const ONLINE={url:'',key:''};
 const BOT_READY=false; // когда бот заработает, поставь true — пропадут пометки «в разработке»
 const BONUS=200,BONUS_CD=5*60*1000;
 
@@ -464,7 +476,7 @@ const defaultState=()=>({players:[],active:0,bet:100,found:{},pot:[],live:[],met
 let S;try{S=JSON.parse(localStorage.getItem('deport_v4'))}catch(e){}
 if(!S||!S.players)S=defaultState();
 S.pot=S.pot||[];S.live=S.live||[];S.meta=S.meta||{};
-const save=()=>{try{localStorage.setItem('deport_v4',JSON.stringify(S))}catch(e){}};
+const save=()=>{try{localStorage.setItem('deport_v4',JSON.stringify(S))}catch(e){}try{onlineSync()}catch(e){}};
 const P=()=>S.players[S.active]||S.players[0];
 const pById=id=>S.players.find(p=>p.id===id);
 const SEL=new Set();
@@ -568,6 +580,7 @@ $('bannerBattle').onclick=()=>{setSeg('battle','cb');go('battle')};
 /* ===== render ===== */
 function renderHdr(){const p=P();$('bal').textContent=fmt(p.bal);$('meAva').style.background=p.color;$('meAva').innerHTML=avaHTML(p);$('eggCount').textContent=Object.keys(S.found).length}
 function renderLive(){const L=$('live');
+  if(GFEED&&GFEED.length){L.innerHTML=GFEED.map(x=>{const r=R[Math.max(0,Math.min(4,+x.rarity||0))];return `<div class="lcard"><div class="th" style="background:radial-gradient(circle,${r.c}66,transparent 70%)">${x.img?`<img src="${esc(x.img)}" alt="">`:'🎁'}</div><div><div class="who">${esc(x.name)}</div><div class="pr">${fmt(x.price)} 🪙</div></div></div>`}).join('');return}
   if(!S.live.length){L.innerHTML='<div class="lempty">Тут будут дропы. Открой кейс 👇</div>';return}
   L.innerHTML=S.live.map(x=>{const it=itemById(x.itemId),p=pById(x.pid);if(!it||!p)return '';const r=R[it.r];
     return `<div class="lcard"><div class="th" style="background:radial-gradient(circle,${r.c}66,transparent 70%)">${vis(it)}</div><div><div class="who"><div class="ava s" style="background:${p.color}">${avaHTML(p)}</div>${esc(p.name)}</div><div class="pr">${fmt(x.price)} 🪙</div></div></div>`}).join('')}
@@ -676,7 +689,7 @@ function renderMore(){renderPacks();
     d.querySelector('.ava').onclick=()=>{avaFor=i;$('avaFile').value='';$('avaFile').click()};
     const x=d.querySelector('.del');if(x)x.onclick=()=>{S.players.splice(i,1);S.pot=S.pot.filter(e=>e.pid!==p.id);if(S.active>=S.players.length)S.active=0;save();render()};pl.appendChild(d)})}
 function render(){if(!S.players.length){showWelcome();return}$('welcome').classList.remove('show');if(S.active>=S.players.length)S.active=0;renderHdr();renderLive();
-  if(page==='cases')renderCases();if(page==='case')renderCase();if(page==='inv')renderInv();applySeg();const sg=S.meta.seg||{};if(page==='battle'){renderPot();renderCB()}if(page==='wheel'){const g=sg.games||'up';if(g==='wheel')renderBets();if(g==='up')renderUp();if(g==='crash')renderCrash();if(g==='ct')renderCt()}if(page==='more')renderMore()}
+  if(page==='cases')renderCases();if(page==='case')renderCase();if(page==='inv')renderInv();applySeg();const sg=S.meta.seg||{};if(page==='battle'){renderPot();renderCB();renderOnline()}if(page==='top')renderTop();if(page==='wheel'){const g=sg.games||'up';if(g==='wheel')renderBets();if(g==='up')renderUp();if(g==='crash')renderCrash();if(g==='ct')renderCt()}if(page==='more')renderMore()}
 
 /* ===== header actions ===== */
 function playerSheet(){
@@ -728,6 +741,7 @@ $('openBtn').onclick=()=>{
     const got=wins.map(w=>{const r=R[w.r],price=Math.round(r.p*(c.mult||1)*(.8+Math.random()*.4)),uid='i'+Date.now()+Math.random().toString(36).slice(2,7);
       p.inv.push({uid,itemId:w.id,price});p.cases++;p.last=[w.id,...p.last].slice(0,10);S.live=[{pid:p.id,itemId:w.id,price,t:Date.now()},...S.live].slice(0,20);
       if(w.r===4)found('gold');return{w,price,uid}});
+    shareDrop(p,got.reduce((a,b)=>b.price>a.price?b:a));
     if(p.cases>=100)found('case100');if(p.last.length>=3&&p.last[0]===p.last[1]&&p.last[1]===p.last[2])found('triple');
     opening=false;save();render();const best=got.reduce((a,b)=>b.w.r>a.w.r||(b.w.r===a.w.r&&b.price>a.price)?b:a);haptic(best.w.r>=3?'heavy':'light');
     if(n===1){const {w,price,uid}=got[0],r=R[w.r];
@@ -882,31 +896,36 @@ function renderCB(){const cfg=cbCfg(),cs=cbCases();cfg.rounds=cfg.rounds.filter(
 $('cbAdd').onclick=()=>{if(cbBusy)return;const cs=cbCases();
   sheet(`<h3>Добавить кейс</h3><div class="plist">${cs.map(c=>`<div class="prow" data-id="${c.id}" style="cursor:pointer"><div class="th" style="width:44px;height:44px">${vis(pool(setOf(c))[0])}</div><b style="flex:1">${esc(c.name)}</b><span style="font-weight:800">${fmtK(c.price)}</span></div>`).join('')}</div>`);
   $('sheet').querySelectorAll('[data-id]').forEach(el=>el.onclick=()=>{cbCfg().rounds.push(el.dataset.id);save();closeSheet();renderCB()})};
+// общая прокрутка кейс-батла: drops[раунд][игрок] = {w, price}; pickFill — чем заполнять ленту
+async function cbArenaRun(A,ps,rounds,drops,pickFill){
+  A.innerHTML=`<h2 style="margin:4px 0 10px">Раунд <span class="cbR">1</span> из ${rounds.length}</h2>`+ps.map((x,i)=>`<div class="cbrow" data-i="${i}"><div class="cbhead"><div class="ava" style="width:34px;height:34px;background:${x.color}">${avaHTML(x)}</div><b>${esc(x.name)}</b><span class="cbtot">0</span></div><div class="strip mstrip"><div class="track"></div><div class="fade"></div><div class="marker"></div></div><div class="cbloot"></div></div>`).join('');
+  A.scrollIntoView({behavior:'smooth',block:'start'});
+  const rows=[...A.querySelectorAll('.cbrow')],fast=!!S.meta.fast,dur=fast?1.2:3.6,WI=18,N=22,cw=90,half=42;
+  ps.forEach(x=>{x.total=0;x.loot=[]});
+  for(let ri=0;ri<rounds.length;ri++){const c=rounds[ri];A.querySelector('.cbR').textContent=ri+1;
+    rows.forEach((row,i)=>{const tr=row.querySelector('.track');let h='';for(let k=0;k<N;k++)h+=icard(k===WI?drops[ri][i].w:pickFill(c),{mini:true});tr.style.transition='none';tr.style.transform='translateX(0)';tr.innerHTML=h});
+    await Promise.race([Promise.all([...A.querySelectorAll('img')].map(i=>i.decode?i.decode().catch(()=>{}):0)),new Promise(r=>setTimeout(r,700))]);
+    await new Promise(r=>requestAnimationFrame(r));
+    rows.forEach(row=>{const tr=row.querySelector('.track'),sw=tr.parentNode.clientWidth,off=WI*cw+half-sw/2+(Math.random()-.5)*50;tr.offsetWidth;tr.style.transition=`transform ${dur}s cubic-bezier(.08,.7,.12,1)`;tr.style.transform=`translateX(${-off}px)`});
+    await new Promise(r=>setTimeout(r,dur*1000+120));
+    rows.forEach((row,i)=>{const d=drops[ri][i];ps[i].total+=d.price;ps[i].loot.push(d);row.querySelector('.cbtot').textContent=fmt(ps[i].total);row.querySelector('.cbloot').insertAdjacentHTML('beforeend',tinyThumb(d.w))});
+    const lead=Math.max(...ps.map(x=>x.total));rows.forEach((row,i)=>row.classList.toggle('win',ps[i].total===lead));
+    haptic('light');await new Promise(r=>setTimeout(r,fast?300:700))}}
+const dropPrice=(w,c,rng=Math.random)=>Math.round(R[w.r].p*(c.mult||1)*(.8+rng()*.4));
 $('cbStart').onclick=async()=>{const cfg=cbCfg(),cs=cbCases(),p=P();if(cbBusy)return;
   const rounds=cfg.rounds.map(id=>cs.find(c=>c.id===id)).filter(Boolean),cost=rounds.reduce((s,c)=>s+c.price,0);
   if(!rounds.length)return;if(p.bal<cost)return toast('Не хватает монет на батл');
   p.bal-=cost;cbBusy=true;save();renderHdr();renderCB();haptic('medium');
   const bots=[...BOTS].sort(()=>Math.random()-.5).slice(0,cfg.players-1).map(([name,emo,color])=>({name,emo,color,avatar:null,bot:true}));
-  const ps=[{name:p.name,color:p.color,avatar:p.avatar,me:true},...bots].map(x=>({...x,total:0,loot:[]}));
-  const A=$('cbArena');A.innerHTML=`<h2 style="margin:4px 0 10px">Раунд <span id="cbR">1</span> из ${rounds.length}</h2>`+ps.map((x,i)=>`<div class="cbrow" id="cbp${i}"><div class="cbhead"><div class="ava" style="width:34px;height:34px;background:${x.color}">${avaHTML(x)}</div><b>${esc(x.name)}</b><span class="cbtot" id="cbt${i}">0</span></div><div class="strip mstrip"><div class="track" id="cbtr${i}"></div><div class="fade"></div><div class="marker"></div></div><div class="cbloot" id="cbl${i}"></div></div>`).join('');
-  A.scrollIntoView({behavior:'smooth',block:'start'});
-  const fast=!!S.meta.fast,dur=fast?1.2:3.6,WI=18,N=22,cw=90,half=42;
-  for(let ri=0;ri<rounds.length;ri++){const c=rounds[ri],set=setOf(c);$('cbR').textContent=ri+1;
-    const wins=ps.map(()=>pickItem(c.w,set));
-    ps.forEach((x,i)=>{const tr=$('cbtr'+i);let h='';for(let k=0;k<N;k++)h+=icard(k===WI?wins[i]:pickItem(c.w,set),{mini:true});tr.style.transition='none';tr.style.transform='translateX(0)';tr.innerHTML=h});
-    await Promise.race([Promise.all([...A.querySelectorAll('img')].map(i=>i.decode?i.decode().catch(()=>{}):0)),new Promise(r=>setTimeout(r,700))]);
-    await new Promise(r=>requestAnimationFrame(r));
-    ps.forEach((x,i)=>{const tr=$('cbtr'+i),sw=tr.parentNode.clientWidth,off=WI*cw+half-sw/2+(Math.random()-.5)*50;tr.offsetWidth;tr.style.transition=`transform ${dur}s cubic-bezier(.08,.7,.12,1)`;tr.style.transform=`translateX(${-off}px)`});
-    await new Promise(r=>setTimeout(r,dur*1000+120));
-    ps.forEach((x,i)=>{const w=wins[i],price=Math.round(R[w.r].p*(c.mult||1)*(.8+Math.random()*.4));x.total+=price;x.loot.push({w,price});
-      $('cbt'+i).textContent=fmt(x.total);$('cbl'+i).insertAdjacentHTML('beforeend',tinyThumb(w))});
-    const lead=Math.max(...ps.map(x=>x.total));ps.forEach((x,i)=>$('cbp'+i).classList.toggle('win',x.total===lead));
-    haptic('light');await new Promise(r=>setTimeout(r,fast?300:700))}
+  const ps=[{name:p.name,color:p.color,avatar:p.avatar,me:true},...bots];
+  const drops=rounds.map(c=>ps.map(()=>{const w=pickItem(c.w,setOf(c));return{w,price:dropPrice(w,c)}}));
+  await cbArenaRun($('cbArena'),ps,rounds,drops,c=>pickItem(c.w,setOf(c)));
   const top=Math.max(...ps.map(x=>x.total)),tied=ps.filter(x=>x.total===top),winner=rnd(tied),all=ps.flatMap(x=>x.loot),sum=all.reduce((s,x)=>s+x.price,0);
-  if(winner.me){all.forEach(x=>p.inv.push({uid:'c'+Date.now()+Math.random().toString(36).slice(2,7),itemId:x.w.id,price:x.price}));if(cfg.players>=4)found('cbwin')}
+  if(winner.me){all.forEach(x=>p.inv.push({uid:'c'+Date.now()+Math.random().toString(36).slice(2,7),itemId:x.w.id,price:x.price}));if(cfg.players>=4)found('cbwin');shareDrop(p,best(all))}
   cbBusy=false;save();render();haptic('heavy');
   overlay(winner.me?{grid:all.sort((a,b)=>b.w.r-a.w.r||b.price-a.price).map(x=>icard(x.w,{price:x.price})).join(''),rc:'#4ade80',title:'ТЫ ЗАБРАЛ ВСЁ',text:`${p.name} выиграл кейс-батл: ${all.length} мемов на ${fmt(sum)} 🪙 уже в инвентаре.${tied.length>1?' Была ничья, решил жребий.':''}`}
     :{vis:`<div style="width:100%;height:100%;display:grid;place-items:center;background:${winner.color};font-size:120px">${winner.emo}</div>`,round:true,rc:winner.color,title:'БАТЛ ПРОИГРАН',text:`${winner.name} выбил на ${fmt(winner.total)} 🪙 и забрал все ${all.length} мемов. У тебя было ${fmt(ps[0].total)}.`})};
+const best=arr=>arr.reduce((a,b)=>!a||b.price>a.price?b:a,null);
 
 /* ===== АПГРЕЙД ===== */
 let upBusy=false,upSel=[],upMulti=2,upRot=0,upTargetItem=null;
@@ -930,7 +949,7 @@ $('upGo').onclick=()=>{if(upBusy)return;const p=P(),st=upStake();if(!st.length)r
   const zone=ch*360,ang=win?Math.random()*zone*.9+zone*.05:zone+Math.random()*(360-zone)*.9+(360-zone)*.05;
   upRot=upRot-(upRot%360)+360*5+ang;upBusy=true;renderUp();haptic('medium');$('upNeedle').style.transform=`rotate(${upRot}deg)`;
   setTimeout(()=>{p.inv=p.inv.filter(x=>!upSel.includes(x.uid));upSel=[];
-    if(win){p.inv.push({uid:'u'+Date.now(),itemId:target.id,price:tprice});if(upMulti>=20)found('up20')}
+    if(win){p.inv.push({uid:'u'+Date.now(),itemId:target.id,price:tprice});if(upMulti>=20)found('up20');shareDrop(p,{w:target,price:tprice})}
     upBusy=false;upTargetItem=null;save();render();haptic(win?'heavy':'light');
     overlay(win?{vis:vis(target,true),rc:'#4ade80',title:'АПГРЕЙД!',text:`${p.name} превратил ${fmt(sum)} 🪙 в «${target.name}» за ${fmt(tprice)} 🪙 с шансом ${(ch*100).toFixed(1)}%`}
       :{vis:emojiOv('💀'),bare:true,rc:'#ff4d6d',title:'СГОРЕЛО',text:`Стрелка не попала. Мемы на ${fmt(sum)} 🪙 сгорели. Шанс был ${(ch*100).toFixed(1)}%.`})},4300)};
@@ -992,8 +1011,145 @@ $('ctGo').onclick=()=>{if(ctBusy)return;const p=P(),sel=ctPool().filter(x=>ctSel
   const sum=sel.reduce((s,x)=>s+x.price,0),sets=sel.map(x=>(itemById(x.itemId)||{}).set||'mell'),set=rnd(sets);
   let cand=(set==='secret'?ALLITEMS():pool(set)).filter(i=>i.r===ctR+1);if(!cand.length)cand=ALLITEMS().filter(i=>i.r===ctR+1);
   const out=rnd(cand),price=Math.round(sum*(.55+Math.random()*.8));ctBusy=true;$('ctGo').disabled=true;$('ctSel').classList.add('ctfly');haptic('medium');
-  setTimeout(()=>{p.inv=p.inv.filter(x=>!ctSel.includes(x.uid));p.inv.push({uid:'k'+Date.now(),itemId:out.id,price});ctSel=[];ctBusy=false;$('ctSel').classList.remove('ctfly');found('contract');save();render();haptic('heavy');
+  setTimeout(()=>{p.inv=p.inv.filter(x=>!ctSel.includes(x.uid));p.inv.push({uid:'k'+Date.now(),itemId:out.id,price});shareDrop(p,{w:out,price});ctSel=[];ctBusy=false;$('ctSel').classList.remove('ctfly');found('contract');save();render();haptic('heavy');
     overlay({vis:vis(out,true),rc:R[out.r].c,title:'КОНТРАКТ ПОДПИСАН',text:`10 мемов на ${fmt(sum)} 🪙 превратились в «${out.name}» за ${fmt(price)} 🪙 ${price>=sum?'— в плюс 🔥':'— в минус, бывает'}`})},950)};
+
+/* ===== ОНЛАЙН (Supabase) ===== */
+let DB=null,onlineReady=false,GFEED=null,roomTimer=null,roomUnsub=null,ROOM=null,roomAnimDone={};
+const loadScript=src=>new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=src;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
+const genCode=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random()*24)]).join('');
+const mainP=()=>S.players[0];
+async function onlineInit(){
+  try{
+    if(window.__DBMOCK){DB=window.__DBMOCK;await DB.init()}
+    else{if(!ONLINE.url||!ONLINE.key)return;
+      await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js');
+      const sb=supabase.createClient(ONLINE.url,ONLINE.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'depost-auth'}});
+      let {data:{session}}=await sb.auth.getSession();
+      if(!session){const r=await sb.auth.signInAnonymously();if(r.error)throw r.error;session=r.data.session}
+      const uid=session.user.id,ok=r=>{if(r.error)throw r.error;return r.data};
+      DB={uid,
+        upsertPlayer:async row=>ok(await sb.from('players').upsert({id:uid,...row,updated_at:new Date().toISOString()})),
+        top:async col=>ok(await sb.from('players').select('id,name,color,wealth,cases,best_name,best_price,best_img').order(col,{ascending:false}).limit(50))||[],
+        feed:async()=>ok(await sb.from('feed').select('*').order('created_at',{ascending:false}).limit(20))||[],
+        addFeed:async row=>ok(await sb.from('feed').insert(row)),
+        onFeed:cb=>{sb.channel('feed').on('postgres_changes',{event:'INSERT',schema:'public',table:'feed'},p=>cb(p.new)).subscribe()},
+        createRoom:async(kind,config)=>{for(let i=0;i<6;i++){const code=genCode(),r=await sb.from('rooms').insert({code,kind,config});if(!r.error)return code}throw new Error('Не получилось создать комнату')},
+        getRoom:async code=>{const [a,b]=await Promise.all([sb.from('rooms').select('*').eq('code',code).maybeSingle(),sb.from('room_players').select('*').eq('room',code).order('joined_at')]);
+          return a.data?{room:a.data,players:b.data||[]}:null},
+        join:async(code,row)=>ok(await sb.from('room_players').upsert({room:code,user_id:uid,...row})),
+        leave:async code=>ok(await sb.from('room_players').delete().eq('room',code).eq('user_id',uid)),
+        spin:async code=>ok(await sb.rpc('spin_room',{p_code:code})),
+        onRoom:(code,cb)=>{const ch=sb.channel('room-'+code).on('postgres_changes',{event:'*',schema:'public',table:'rooms',filter:'code=eq.'+code},cb)
+          .on('postgres_changes',{event:'*',schema:'public',table:'room_players',filter:'room=eq.'+code},cb).subscribe();return()=>sb.removeChannel(ch)}};
+    }
+    onlineReady=true;
+    GFEED=(await DB.feed()).slice(0,20);DB.onFeed(row=>{if(!GFEED.some(x=>x.id===row.id)){GFEED.unshift(row);GFEED=GFEED.slice(0,20);renderLive()}});
+    setInterval(async()=>{try{const f=await DB.feed();if(f.length)GFEED=f.slice(0,20);renderLive()}catch(e){}},45000);
+    onlineSync(true);render();
+  }catch(e){console.log('online off',e);onlineReady=false;render()}}
+const absImg=it=>{if(!it)return '';const u=it.th||it.url||'';if(!u||u.startsWith('blob:'))return '';if(u.startsWith('data:'))return u.length<6000?u:'';try{return new URL(u,location.href).href}catch(e){return ''}};
+const onlineItem=it=>it&&!/^(p|v)\d/.test(it.id)&&!String(it.id).startsWith('pk:');
+let syncT=null,lastSync=0;
+function onlineSync(now){if(!onlineReady||!mainP())return;clearTimeout(syncT);const go=async()=>{lastSync=Date.now();const p=mainP();
+    const bestInv=p.inv.reduce((a,x)=>!a||x.price>a.price?x:a,null);p.best=p.best||{price:0};
+    if(bestInv&&bestInv.price>p.best.price){const it=itemById(bestInv.itemId);p.best={name:it?it.name:'?',price:bestInv.price,img:absImg(it)}}
+    const iv=invValue(p);try{await DB.upsertPlayer({name:p.name.slice(0,24),color:p.color,balance:Math.round(p.bal),inv_value:iv,wealth:Math.round(p.bal)+iv,cases:p.cases||0,best_name:p.best.name||null,best_price:p.best.price||0,best_img:p.best.img||null})}catch(e){console.log('sync',e)}};
+  if(now||Date.now()-lastSync>20000)go();else syncT=setTimeout(go,20000-(Date.now()-lastSync))}
+function shareDrop(p,d){if(!onlineReady||!d||p!==mainP())return;const it=d.w||itemById(d.itemId);if(!it||!(it.r>=2||d.price>=1000))return;
+  DB.addFeed({name:p.name.slice(0,24),item:String(it.name).slice(0,60),rarity:it.r,price:Math.round(d.price),img:absImg(it)||null}).catch(()=>{})}
+
+/* --- таблица лидеров --- */
+let topTab='wealth';
+async function renderTop(){const L=$('topList');$('topSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===topTab));
+  if(!onlineReady){L.innerHTML='<div class="hint">Онлайн не подключён. Таблица лидеров работает на сайте игры, когда есть интернет.</div>';return}
+  L.innerHTML='<div class="hint">Загружаю…</div>';
+  try{const rows=await DB.top(topTab==='best'?'best_price':topTab);
+    L.innerHTML=rows.length?rows.map((r,i)=>{const v=topTab==='wealth'?fmt(r.wealth)+' 🪙':topTab==='cases'?fmt(r.cases)+' кейсов':fmt(r.best_price)+' 🪙';
+      const sub=topTab==='best'&&r.best_name?`<div style="font-size:12px;color:var(--muted)">${esc(r.best_name)}</div>`:'';
+      const medal=['🥇','🥈','🥉'][i]||`<span style="color:var(--muted)">${i+1}</span>`;
+      return `<div class="prow" style="${r.id===DB.uid?'outline:2px solid var(--acc2)':''}"><b style="width:30px;text-align:center;font-size:18px">${medal}</b>${topTab==='best'&&r.best_img?`<div class="th" style="width:44px;height:44px"><img src="${esc(r.best_img)}"></div>`:`<div class="ava" style="background:${esc(r.color||'#7565ff')}">${esc((r.name||'?')[0])}</div>`}<div style="flex:1;min-width:0"><b>${esc(r.name)}</b>${r.id===DB.uid?' <span class="tag">ТЫ</span>':''}${sub}</div><b style="white-space:nowrap">${v}</b></div>`}).join(''):'<div class="hint">Пока пусто. Будь первым!</div>'}
+  catch(e){L.innerHTML='<div class="hint">Не получилось загрузить таблицу. Проверь интернет.</div>'}}
+$('topSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;topTab=b.dataset.v;renderTop()};
+$('topTile').onclick=()=>go('top');$('topBack').onclick=()=>go('cases');
+
+/* --- онлайн-батлы с друзьями --- */
+const seeded=seed=>{let a=seed>>>0;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}};
+const poolOnline=set=>pool(set).filter(onlineItem).slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+function pickItemR(w,set,rng){const pl=poolOnline(set).filter(i=>w[i.r]>0),present=[...new Set(pl.map(x=>x.r))].sort();
+  const tot=present.reduce((s,r)=>s+w[r],0);let x=rng()*tot,rr=present[0];for(const r of present){x-=w[r];if(x<=0){rr=r;break}}
+  const c=pl.filter(i=>i.r===rr);return c[Math.floor(rng()*c.length)]}
+const onCases=()=>cbCases().filter(c=>!String(c.set||'').startsWith('pk:')&&poolOnline(setOf(c)).length);
+function myRoom(){return S.meta.room||null}
+function refund(){const r=myRoom(),p=mainP();if(!r||!p)return;if(r.stake){p.bal+=r.stake.coins||0;(r.stake.items||[]).forEach(x=>p.inv.push(x))}if(r.paid)p.bal+=r.paid;S.meta.room=null;save()}
+async function createRoom(kind){if(!onlineReady)return;if(myRoom())return toast('Ты уже в комнате');
+  const config=kind==='cb'?{rounds:cbCfg().rounds.filter(id=>onCases().some(c=>c.id===id))}:{};
+  if(kind==='cb'&&!config.rounds.length)return toast('Сначала добавь кейсы во вкладке «Кейс-батл»');
+  try{const code=await DB.createRoom(kind,config);await enterRoom(code,true)}catch(e){toast('Не получилось создать комнату')}}
+async function enterRoom(code,isHost){code=String(code||'').trim().toUpperCase();if(!/^[A-Z]{4}$/.test(code))return toast('Код — это 4 буквы');
+  const d=await DB.getRoom(code).catch(()=>null);if(!d)return toast('Комната не найдена');
+  if(d.room.status!=='open')return toast('Батл в этой комнате уже прошёл');
+  const p=mainP();let paid=0;
+  if(d.room.kind==='cb'){const cost=(d.room.config.rounds||[]).reduce((s,id)=>s+((onCases().find(c=>c.id===id)||{}).price||0),0);if(p.bal<cost)return toast(`Нужно ${fmt(cost)} 🪙 на кейсы`);p.bal-=cost;paid=cost}
+  S.meta.room={code,kind:d.room.kind,paid,stake:{coins:0,items:[]}};save();
+  try{await DB.join(code,{name:p.name.slice(0,24),color:p.color,stake:{coins:0,items:[]},value:paid})}catch(e){refund();return toast('Не получилось зайти')}
+  watchRoom();render()}
+async function leaveRoom(){const r=myRoom();if(!r)return;if(ROOM&&ROOM.room.status!=='open')return;
+  try{await DB.leave(r.code)}catch(e){}refund();stopWatch();ROOM=null;render();toast('Ты вышел из комнаты, ставка вернулась')}
+async function pushStake(){const r=myRoom(),p=mainP();const v=r.kind==='cb'?r.paid:(r.stake.coins||0)+(r.stake.items||[]).reduce((s,x)=>s+x.price,0);
+  try{await DB.join(r.code,{name:p.name.slice(0,24),color:p.color,stake:{coins:r.stake.coins||0,items:(r.stake.items||[]).map(x=>({itemId:x.itemId,price:x.price}))},value:v})}catch(e){toast('Не получилось обновить ставку')}
+  refreshRoom()}
+function stopWatch(){clearInterval(roomTimer);roomTimer=null;if(roomUnsub){roomUnsub();roomUnsub=null}}
+function watchRoom(){stopWatch();const r=myRoom();if(!r||!onlineReady)return;roomUnsub=DB.onRoom(r.code,()=>refreshRoom());roomTimer=setInterval(refreshRoom,3000);refreshRoom()}
+async function refreshRoom(){const r=myRoom();if(!r)return;const d=await DB.getRoom(r.code).catch(()=>null);if(!d)return;ROOM=d;
+  if(d.room.status==='done'&&!roomAnimDone[r.code]){roomAnimDone[r.code]=1;stopWatch();return finishRoom(d)}
+  if(page==='battle')renderOnline()}
+async function finishRoom(d){const r=myRoom(),p=mainP(),me=DB.uid,ps=d.players.map(x=>({name:x.name,color:x.color||'#7565ff',avatar:null,uid:x.user_id,stake:x.stake,value:+x.value||0}));
+  // если ставку докинули уже после запуска, сервер её не видел — возвращаем её владельцу
+  const mine=ps.find(x=>x.uid===me);if(r&&r.stake&&mine){const sv=(mine.stake&&mine.stake.items||[]).map(x=>x.itemId+':'+x.price);
+    (r.stake.items||[]).forEach(x=>{const k=x.itemId+':'+x.price,i=sv.indexOf(k);if(i>=0)sv.splice(i,1);else p.inv.push(x)});
+    const extra=(r.stake.coins||0)-((mine.stake&&mine.stake.coins)||0);if(extra>0)p.bal+=extra}
+  setSeg('battle','online');go('battle');const A=$('onArena');A.innerHTML='';
+  if(d.room.kind==='dep'){const tot=ps.reduce((s,x)=>s+x.value,0),win=ps.find(x=>x.uid===d.room.winner)||ps[0],tiles=[];
+    ps.forEach(x=>{for(let i=0;i<Math.max(1,Math.round(x.value/tot*60));i++)tiles.push(x)});
+    const WI=52,seq=[];for(let i=0;i<60;i++)seq.push(i===WI?win:rnd(tiles));
+    A.innerHTML='<div class="strip jstrip"><div class="track"></div><div class="fade"></div><div class="marker"></div></div>';const tr=A.querySelector('.track');
+    tr.innerHTML=seq.map(x=>`<div class="tile" style="background:${x.color}">${esc(x.name[0])}</div>`).join('');A.scrollIntoView({behavior:'smooth',block:'center'});
+    await new Promise(r=>requestAnimationFrame(r));const sw=A.clientWidth,off=WI*98+45-sw/2+(Math.random()-.5)*60;tr.offsetWidth;tr.style.transition='transform 6s cubic-bezier(.08,.7,.12,1)';tr.style.transform=`translateX(${-off}px)`;
+    await new Promise(r=>setTimeout(r,6100));
+    if(win.uid===me){ps.forEach(x=>{p.bal+=(x.stake&&x.stake.coins)||0;((x.stake&&x.stake.items)||[]).forEach(it=>{if(itemById(it.itemId))p.inv.push({uid:'o'+Date.now()+Math.random().toString(36).slice(2,7),itemId:it.itemId,price:it.price})})});found('onlinewin')}
+    S.meta.room=null;ROOM=null;save();render();haptic('heavy');
+    overlay({vis:`<div style="width:100%;height:100%;display:grid;place-items:center;background:${win.color};font:800 110px Unbounded;color:#14112b">${esc(win.name[0])}</div>`,round:true,rc:win.color,title:win.uid===me?'ТЫ ЗАБРАЛ БАНК':'БАНК ЗАБРАЛ '+win.name.toUpperCase(),text:`Банк ${fmt(tot)} 🪙. Шанс победителя был ${(win.value/tot*100).toFixed(1)}%.`})}
+  else{const rng=seeded(+d.room.result.seed||1),rounds=(d.room.config.rounds||[]).map(id=>onCases().find(c=>c.id===id)).filter(Boolean);
+    const drops=rounds.map(c=>ps.map(()=>{const w=pickItemR(c.w,setOf(c),rng);return{w,price:dropPrice(w,c,rng)}}));
+    const totals=ps.map((x,i)=>drops.reduce((s,rd)=>s+rd[i].price,0)),top=Math.max(...totals),tied=ps.filter((x,i)=>totals[i]===top),win=tied[Math.floor(rng()*tied.length)];
+    await cbArenaRun(A,ps,rounds,drops,c=>pickItem(c.w,setOf(c)));
+    const all=ps.flatMap(x=>x.loot),sum=all.reduce((s,x)=>s+x.price,0);
+    if(win.uid===me){all.forEach(x=>p.inv.push({uid:'o'+Date.now()+Math.random().toString(36).slice(2,7),itemId:x.w.id,price:x.price}));found('onlinewin');shareDrop(p,best(all))}
+    S.meta.room=null;ROOM=null;save();render();haptic('heavy');
+    overlay(win.uid===me?{grid:all.sort((a,b)=>b.w.r-a.w.r||b.price-a.price).map(x=>icard(x.w,{price:x.price})).join(''),rc:'#4ade80',title:'ТЫ ЗАБРАЛ ВСЁ',text:`Онлайн кейс-батл выигран: ${all.length} мемов на ${fmt(sum)} 🪙.`}
+      :{vis:`<div style="width:100%;height:100%;display:grid;place-items:center;background:${win.color};font:800 110px Unbounded;color:#14112b">${esc(win.name[0])}</div>`,round:true,rc:win.color,title:'ПОБЕДИЛ '+win.name.toUpperCase(),text:`${win.name} выбил на ${fmt(win.total)} 🪙 и забрал все мемы.`})}}
+function renderOnline(){const box=$('onBox');
+  if(!onlineReady){box.innerHTML='<div class="hint">Онлайн-батлы работают на сайте игры, когда есть интернет. Если не грузится — обнови страницу.</div>';return}
+  const r=myRoom();
+  if(!r){box.innerHTML=`<div class="hint" style="margin-top:0">Батл с друзьями с разных телефонов. Один создаёт комнату, остальные вводят её код.</div>
+    <div class="box"><div class="row"><button class="btn acc" id="onNewDep" style="flex:1">💸 Новый деп-батл</button><button class="btn acc" id="onNewCb" style="flex:1">⚔️ Новый кейс-батл</button></div>
+    <div class="hint">Кейсы для кейс-батла берутся из вкладки «Кейс-батл».</div>
+    <div class="row"><input type="text" id="onCode" placeholder="Код комнаты" maxlength="4" style="flex:1;text-transform:uppercase;letter-spacing:4px;text-align:center;font-size:20px"><button class="btn" id="onJoin" style="height:44px">Войти</button></div></div>`;
+    $('onNewDep').onclick=()=>createRoom('dep');$('onNewCb').onclick=()=>createRoom('cb');$('onJoin').onclick=()=>enterRoom($('onCode').value);$('onCode').onkeydown=e=>{if(e.key==='Enter')$('onJoin').click()};return}
+  const d=ROOM,host=d&&d.room.host===DB.uid,ps=d?d.players:[],tot=ps.reduce((s,x)=>s+(+x.value||0),0);
+  const cases=d&&d.room.kind==='cb'?(d.room.config.rounds||[]).map(id=>onCases().find(c=>c.id===id)).filter(Boolean):[];
+  box.innerHTML=`<div class="box"><div class="row" style="justify-content:space-between"><div><div class="uplbl" style="margin:0">${r.kind==='cb'?'Кейс-батл':'Деп-батл'} · код комнаты</div><div style="font:800 34px Unbounded;letter-spacing:6px">${r.code}</div></div><button class="btn" id="onCopy">Скопировать</button></div>
+    ${r.kind==='cb'?`<div class="hint">Кейсы: ${cases.map(c=>esc(c.name)).join(' → ')||'—'} · вход ${fmt(r.paid)} 🪙</div>`:''}
+    <div class="plist" style="margin-top:10px">${ps.map(x=>`<div class="potrow"><div class="ava" style="background:${esc(x.color||'#7565ff')}">${esc((x.name||'?')[0])}</div><div><b>${esc(x.name)}</b>${x.user_id===d.room.host?' 👑':''}${x.user_id===DB.uid?' <span class="tag">ТЫ</span>':''}<div class="thumbs">${((x.stake&&x.stake.items)||[]).map(it=>tinyThumb(itemById(it.itemId))).join('')}${x.stake&&x.stake.coins?`<span style="font-weight:800;color:var(--gold);align-self:center">+${fmt(x.stake.coins)}</span>`:''}</div></div><div class="v">${r.kind==='dep'&&tot?((+x.value||0)/tot*100).toFixed(1)+'%':''}<small>${fmt(+x.value||0)} 🪙</small></div></div>`).join('')||'<div class="hint">Загружаю…</div>'}</div>
+    ${r.kind==='dep'?`<div class="row" style="margin-top:10px"><button class="btn acc" id="onItems">Закинуть мемов</button><button class="btn" data-oc="100">+100</button><button class="btn" data-oc="500">+500</button><button class="btn" data-oc="all">Всё</button></div>`:''}
+    <div class="openrow" style="margin-bottom:0">${host?`<button class="bigbtn hot" id="onSpin" ${ps.length<2||(r.kind==='dep'&&ps.filter(x=>+x.value>0).length<2)?'disabled':''}>Крутить</button>`:`<div class="hint" style="flex:1;margin:0;text-align:center">Ждём, пока создатель комнаты запустит батл</div>`}<button class="btn" id="onLeave" style="height:58px">Выйти</button></div></div>
+    <div class="hint">Игроков: ${ps.length}. Скинь друзьям код — пусть введут его во вкладке «Батлы» → «С друзьями».</div>`;
+  $('onCopy').onclick=()=>{try{navigator.clipboard.writeText(r.code).then(()=>toast('Код скопирован'),()=>toast('Код: '+r.code))}catch(e){toast('Код: '+r.code)}};
+  $('onLeave').onclick=leaveRoom;
+  const sp=$('onSpin');if(sp)sp.onclick=async()=>{sp.disabled=true;try{await DB.spin(r.code);refreshRoom()}catch(e){toast('Не получилось запустить: '+(e.message||''));sp.disabled=false}};
+  if(r.kind==='dep'){$('onItems').onclick=()=>invPickSheet('Что ставим в банк',x=>onlineItem(itemById(x.itemId)),[],10,sel=>{const p=mainP(),mv=p.inv.filter(x=>sel.includes(x.uid));p.inv=p.inv.filter(x=>!sel.includes(x.uid));r.stake.items.push(...mv);save();pushStake()});
+    box.querySelectorAll('[data-oc]').forEach(b=>b.onclick=()=>{const p=mainP(),v=b.dataset.oc==='all'?p.bal:Math.min(+b.dataset.oc,p.bal);if(v<=0)return toast('Монет нет');p.bal-=v;r.stake.coins+=v;save();renderHdr();pushStake()})}}
 
 /* ===== ссылки из канала и бота ===== */
 let bootReady=false;const LINK=(()=>{try{const q=new URLSearchParams(location.search);return{pack:q.get('pack'),code:q.get('code')}}catch(e){return{}}})();
@@ -1012,6 +1168,7 @@ render();
   S.pot.forEach(e=>e.items=e.items.filter(x=>itemById(x.itemId)));S.live=S.live.filter(x=>itemById(x.itemId));
   for(let i=0;i<PACKITEMS.length;i+=4)await Promise.all(PACKITEMS.slice(i,i+4).map(makeThumb));
   save();render();bootReady=true;runLinks();
+  await onlineInit();if(onlineReady&&myRoom())watchRoom();
 })();
 })();
 </script>
