@@ -100,29 +100,29 @@
     {
       "file": "yt-1.jpg",
       "match": "yt-1.",
-      "name": "Ютубер 1",
+      "name": "Симп",
       "rarity": 1,
       "set": "yt"
     },
     {
       "file": "yt-2.jpg",
       "match": "yt-2.",
-      "name": "Ютубер 2",
+      "name": "Донк",
       "rarity": 2,
       "set": "yt"
     },
     {
       "file": "yt-3.jpg",
       "match": "yt-3.",
-      "name": "Ютубер 3",
-      "rarity": 3,
+      "name": "Компот",
+      "rarity": 2,
       "set": "yt"
     },
     {
       "file": "yt-4.jpg",
       "match": "yt-4.",
-      "name": "Ютубер 4",
-      "rarity": 4,
+      "name": "Мистер Бист",
+      "rarity": 3,
       "set": "yt"
     }
   ]
