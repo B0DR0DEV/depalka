@@ -30,6 +30,7 @@ DEFAULT_CONFIG = {
     "site_url": "https://b0dr0dev.github.io/depalka/",
     "channel_url": "https://t.me/depost_packs",
     "proxy": "",
+    "payments_enabled": False,
     "pay_text": "Переведи деньги Роме (номер спроси у него лично) и нажми «Я оплатил».",
     "products": {
         "unlimited": {"title": "♾️ Безлимит навсегда", "price": "30 ₽",
@@ -185,6 +186,12 @@ def handle_callback(cb, cfg, state):
         p = cfg["products"].get(k)
         if not p:
             return
+        if not cfg.get("payments_enabled", False):
+            back = [[{"text": "📦 Наш канал", "url": cfg["channel_url"]}]] if cfg.get("channel_url") else []
+            send(chat_id, f"<b>{p['title']}</b> — {p['price']}\n{esc(p['about'])}\n\n"
+                          "⏳ Оплата временно не работает. Скоро включим, следи за новостями в канале.",
+                 back + [[{"text": "← Назад", "callback_data": "menu"}]])
+            return
         send(chat_id, f"<b>{p['title']}</b> — {p['price']}\n{esc(p['about'])}\n\n{esc(cfg['pay_text'])}",
              [[{"text": "✅ Я оплатил", "callback_data": f"paid:{k}"}],
               [{"text": "← Назад", "callback_data": "menu"}]])
@@ -194,6 +201,9 @@ def handle_callback(cb, cfg, state):
         k = data[5:]
         p = cfg["products"].get(k)
         if not p:
+            return
+        if not cfg.get("payments_enabled", False):
+            send(chat_id, "⏳ Оплата временно не работает. Скоро включим.")
             return
         if not admin:
             send(chat_id, "Админ ещё не настроил бота. Напиши Роме напрямую.")

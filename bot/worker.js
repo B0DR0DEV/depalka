@@ -7,6 +7,9 @@
 
 // ===== НАСТРОЙКИ =====
 const CONFIG = {
+  // false — оплата временно выключена: бот показывает донат, но пишет, что оплата не работает.
+  // Включить: поставь true и нажми Deploy.
+  payments_enabled: false,
   site_url: "https://b0dr0dev.github.io/depalka/",
   channel_url: "https://t.me/depost_packs",
   pay_text: "Переведи деньги Роме (номер спроси у него лично) и нажми «Я оплатил».",
@@ -89,11 +92,14 @@ async function onCallback(env, cb) {
   if (data === "menu") return send(env, chat, "Выбирай:", menu());
   if (data.startsWith("buy:")) {
     const k = data.slice(4), p = CONFIG.products[k]; if (!p) return;
+    if (!CONFIG.payments_enabled) return send(env, chat, `<b>${p.title}</b> — ${p.price}\n${esc(p.about)}\n\n⏳ Оплата временно не работает. Скоро включим, следи за новостями в канале.`,
+      [...(CONFIG.channel_url ? [[{ text: "📦 Наш канал", url: CONFIG.channel_url }]] : []), [{ text: "← Назад", callback_data: "menu" }]]);
     return send(env, chat, `<b>${p.title}</b> — ${p.price}\n${esc(p.about)}\n\n${esc(CONFIG.pay_text)}`,
       [[{ text: "✅ Я оплатил", callback_data: `paid:${k}` }], [{ text: "← Назад", callback_data: "menu" }]]);
   }
   if (data.startsWith("paid:")) {
     const k = data.slice(5), p = CONFIG.products[k]; if (!p) return;
+    if (!CONFIG.payments_enabled) return send(env, chat, "⏳ Оплата временно не работает. Скоро включим.");
     if (!admin) return send(env, chat, "Админ ещё не настроил бота. Напиши Роме напрямую.");
     const rid = String((Number(await env.DB.get("nextid")) || 0) + 1);
     await env.DB.put("nextid", rid);
