@@ -143,6 +143,7 @@ input[type=text],select{height:44px;background:var(--card2);border:1px solid var
 .drop{border:2px dashed rgba(155,141,255,.5);border-radius:22px;padding:20px;text-align:center;cursor:pointer;background:rgba(117,101,255,.07);font-size:14px;color:var(--muted)}
 .drop b{font:800 17px Unbounded;color:var(--text);display:block;margin-bottom:4px}
 a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:var(--text)}
+.soon{margin-left:6px;padding:2px 6px;border-radius:7px;background:var(--gold);color:#3a2800;font-size:10px;font-weight:800}
 .tgrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:-4px 0 14px}.tglink{height:48px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-weight:800;font-size:14px}
 .tag{font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;background:rgba(74,222,128,.15);color:var(--green)}
 
@@ -224,7 +225,7 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
   <!-- CASES -->
   <div class="pg on" id="pg-cases">
     <div class="banner" id="bannerBattle"><div class="l">🎁</div><div class="r">💸</div><div class="c"><h3>Деп-батл</h3><button class="btnp">Играть</button></div></div>
-    <div class="tgrow"><a class="tglink" data-tg="channel" target="_blank" rel="noopener">📢 Паки в канале</a><a class="tglink" data-tg="bot" target="_blank" rel="noopener">🎟 Промокоды</a></div>
+    <div class="tgrow"><a class="tglink" data-tg="channel" target="_blank" rel="noopener">📢 Паки в канале</a><a class="tglink" data-tg="bot" target="_blank" rel="noopener">🎟 Промокоды<span class="soon">скоро</span></a></div>
     <div class="chips" id="chips"></div>
     <div id="caseList"></div>
   </div>
@@ -283,7 +284,7 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
     <div class="plist" id="perkList"></div>
     <div class="row" style="margin-top:10px"><input type="text" id="promo" placeholder="Промокод, например DEP-XXXX-XXXX" maxlength="20" autocomplete="off" style="flex:1;text-transform:uppercase"><button class="btn acc" id="promoBtn">Активировать</button></div>
     <a class="btn acc" data-tg="bot" target="_blank" rel="noopener" style="width:100%;margin-top:10px">❓ Как получить промокод?</a>
-    <div class="hint">Промокоды выдаёт наш Telegram-бот. Донат, монеты и предметы вывести обратно в деньги нельзя, это только внутри игры.</div>
+    <div class="hint"><span class="botdev">🛠 Бот с промокодами пока в разработке, скоро заработает. </span>Промокоды выдаёт наш Telegram-бот. Донат, монеты и предметы вывести обратно в деньги нельзя, это только внутри игры.</div>
     <h2>📦 Паки</h2>
     <div class="hint" style="margin-top:-4px">Паки выходят в нашем Telegram-канале. Нажми на ссылку пака в канале, и он сам добавится в игру. Или вставь ссылку сюда.</div>
     <a class="btn" data-tg="channel" target="_blank" rel="noopener" style="width:100%;margin-bottom:10px">📢 Паки в нашем канале</a>
@@ -377,6 +378,7 @@ const COLORS=['#ff7ab0','#5ee0ff','#ffcf4a','#7cff9b','#ff9a5a','#b99bff','#ff6b
 const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',pack:'Коллекционер паков',botwin:'Ограблен ботом',donat:'Донатер',mama:'Мама, дай денег',spam:'Пополнятор'};
 // Telegram: поменяй тут, если ники заняты
 const TG={bot:'depost_promo_bot',channel:'depost_packs'};
+const BOT_READY=false; // когда бот заработает, поставь true — пропадут пометки «в разработке»
 const BONUS=200,BONUS_CD=5*60*1000;
 
 /* ===== state ===== */
@@ -613,7 +615,7 @@ $('topup').onclick=()=>{
   const p=P(),left=(p.bonusAt||0)+BONUS_CD-now;
   if(left<=0){p.bal+=BONUS;p.bonusAt=now;save();render();haptic('medium');
     if(!S.found.mama){found('mama');overlay({vis:emojiOv('👩‍🍳'),bare:true,title:'МАМА ДАЛА',text:`${p.name} попросил у мамы на обед. Мама дала ${BONUS} монет и сказала не тратить на ерунду.`})}else toast(`+${BONUS} 🪙 бонус`)}
-  else{const m=Math.ceil(left/60000);sheet(`<h3>Пополнить</h3><div class="hint">Деньги тут ненастоящие. Каждые 5 минут можно взять бонус +${BONUS} монет. Следующий через ${m} мин.</div><div class="hint">А ещё можно открыть бесплатный кейс и продать то, что выпало.</div><button class="btn acc" style="width:100%" id="gofree">К бесплатному кейсу</button><button class="btn" style="width:100%;margin-top:8px" id="gopromo">💎 Ввести промокод</button><a class="btn" data-tg="bot" target="_blank" rel="noopener" style="width:100%;margin-top:8px">❓ Как получить промокод?</a>`);setTgLinks();
+  else{const m=Math.ceil(left/60000);sheet(`<h3>Пополнить</h3><div class="hint">Деньги тут ненастоящие. Каждые 5 минут можно взять бонус +${BONUS} монет. Следующий через ${m} мин.</div><div class="hint">А ещё можно открыть бесплатный кейс и продать то, что выпало.</div><button class="btn acc" style="width:100%" id="gofree">К бесплатному кейсу</button><button class="btn" style="width:100%;margin-top:8px" id="gopromo">💎 Ввести промокод</button><a class="btn" data-tg="bot" target="_blank" rel="noopener" style="width:100%;margin-top:8px">❓ Как получить промокод?</a>${BOT_READY?'':'<div class="hint" style="text-align:center;margin:8px 0 0">🛠 Бот с промокодами пока в разработке</div>'}`);setTgLinks();
     $('gopromo').onclick=()=>{closeSheet();go('more');setTimeout(()=>$('promo').focus(),200)};
     $('gofree').onclick=()=>{closeSheet();curCase=CASES[0];resetStrip();go('case')}}};
 
@@ -760,6 +762,7 @@ $('promoBtn').onclick=redeem;$('packBtn').onclick=()=>{importPack($('packLink').
 function setTgLinks(){document.querySelectorAll('[data-tg]').forEach(a=>{a.href='https://t.me/'+TG[a.dataset.tg];
   a.onclick=e=>{if(tg&&tg.openTelegramLink){e.preventDefault();tg.openTelegramLink(a.href)}}})}
 setTgLinks();
+if(BOT_READY)document.querySelectorAll('.soon,.botdev').forEach(e=>e.remove());
 /* ===== welcome ===== */
 function showWelcome(){const w=$('welcome');if(w.classList.contains('show'))return;w.classList.add('show');
   const i=$('wName');if(tgName&&!i.value){i.value=tgName;i.oninput()}setTimeout(()=>i.focus(),100)}
