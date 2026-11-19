@@ -325,9 +325,30 @@ const CASES=[
   {id:'voznya',name:'Пошла возня',price:400,w:[35,35,18,9,3],bg:['#ff5a5a','#a83dff']},
   {id:'gold',name:'Легендарный',price:600,w:[25,33,22,14,6],bg:['#ffd84a','#ff8a2b']},
   {id:'lux',name:'Только редкие',price:1500,w:[0,0,55,35,10],bg:['#ff3dbd','#7a2bff'],badge:'🔥 Хайроллер'},
+  {id:'cs',name:'Скины CS2',price:300,w:[45,30,15,7,3],bg:['#3d8bff','#22306e'],badge:'🔫 CS2',set:'cs'},
   {id:'yt',name:'Ютуберы',price:250,w:[40,30,18,9,3],bg:['#ff3d3d','#ff9a3d'],badge:'🆕 Новый',set:'yt'},
 ];
 const DEF=[{id:'d0',name:'Носок',e:'🧦',r:0},{id:'d1',name:'Картошка',e:'🥔',r:0},{id:'d2',name:'Тапок',e:'🩴',r:0},{id:'d3',name:'Чайник',e:'🫖',r:1},{id:'d4',name:'Жаба',e:'🐸',r:1},{id:'d5',name:'Шаурма',e:'🌯',r:2},{id:'d6',name:'Корона',e:'👑',r:3},{id:'d7',name:'Бриллиант',e:'💎',r:4}];
+/* ===== кейс «Скины CS2»: свои нарисованные иконки оружия (без картинок Valve) ===== */
+const GUN={
+ rifle:'<path d="M12 44 L44 40 L44 58 L16 70 Z"/><rect x="40" y="38" width="104" height="20" rx="3"/><rect x="140" y="43" width="50" height="7" rx="2"/><path d="M96 56 L112 56 L106 86 L90 83 Z"/><path d="M64 56 L76 56 L70 76 L58 74 Z"/><rect x="120" y="32" width="6" height="8"/>',
+ sniper:'<path d="M8 46 L42 42 L42 60 L12 70 Z"/><rect x="38" y="42" width="96" height="16" rx="3"/><rect x="130" y="46" width="64" height="6" rx="2"/><rect x="66" y="26" width="52" height="11" rx="5"/><rect x="84" y="36" width="8" height="8"/><path d="M60 56 L72 56 L66 76 L54 74 Z"/><path d="M98 56 L108 56 L104 72 L96 71 Z"/>',
+ pistol:'<rect x="44" y="36" width="104" height="22" rx="4"/><path d="M58 56 L86 56 L78 98 L50 94 Z"/><path d="M86 58 Q96 74 104 58" fill="none" stroke-width="5"/><rect x="140" y="40" width="10" height="6"/>',
+ smg:'<path d="M20 46 L48 44 L48 58 L24 64 Z"/><rect x="44" y="40" width="88" height="20" rx="4"/><rect x="128" y="45" width="40" height="8" rx="2"/><path d="M92 58 L104 58 L102 92 L90 92 Z"/><path d="M60 58 L72 58 L66 78 L54 76 Z"/>',
+ knife:'<path d="M70 62 Q120 14 190 26 Q150 44 92 70 Z"/><rect x="14" y="58" width="62" height="18" rx="9" transform="rotate(-8 45 67)"/><circle cx="24" cy="70" r="7" fill="none" stroke-width="5"/>',
+ gloves:'<path d="M58 98 L58 54 Q58 46 66 46 L66 30 Q66 22 73 22 Q80 22 80 30 L80 44 L84 20 Q85 12 92 12 Q99 13 98 21 L96 44 L102 24 Q104 16 111 17 Q118 19 116 27 L110 50 L118 38 Q123 31 129 35 Q135 40 130 47 L114 76 Q108 90 104 98 Z"/><rect x="54" y="96" width="54" height="14" rx="4"/>'
+};
+function gunSVG(type,cols,rc){const id='g'+Math.random().toString(36).slice(2,7);
+  const stops=cols.map((c,i)=>`<stop offset="${i/(cols.length-1||1)}" stop-color="${c}"/>`).join('');
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><radialGradient id="b${id}" cx="50%" cy="58%" r="65%"><stop offset="0" stop-color="${rc}" stop-opacity=".55"/><stop offset="1" stop-color="#151827"/></radialGradient><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">${stops}</linearGradient><pattern id="p${id}" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="6" height="12" fill="#fff" opacity=".08"/></pattern></defs><rect width="200" height="200" fill="url(#b${id})"/><g transform="translate(0 46)" fill="url(#${id})" stroke="url(#${id})" stroke-linejoin="round">${GUN[type]}</g><g transform="translate(0 46)" fill="url(#p${id})" stroke="none">${GUN[type]}</g></svg>`;
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)}
+const CSITEMS=[
+ ['P250 | Sand Dune','pistol',['#d9c79a','#a8916a'],0],['G3SG1 | Desert Storm','sniper',['#cdb98d','#8f7a55'],0],['MAG-7 | Storm','smg',['#9fb0c2','#5d6b7d'],0],['Nova | Polar Mesh','rifle',['#e6edf3','#9aa7b4'],0],
+ ['Glock-18 | Water Elemental','pistol',['#3fb5ff','#1c4f9c','#ff5a3d'],1],['MP7 | Bloodsport','smg',['#ff3d3d','#1a1a1a'],1],['USP-S | Cortex','pistol',['#33e0c8','#ff4fa3'],1],
+ ['AK-47 | Redline','rifle',['#e3262b','#141414'],2],['M4A1-S | Printstream','rifle',['#ffffff','#1b1b1b'],2],['Desert Eagle | Blaze','pistol',['#ffd23f','#ff6a00','#c41e00'],2],
+ ['AWP | Asiimov','sniper',['#ffffff','#ff7a1a','#111'],3],['AK-47 | Fire Serpent','rifle',['#3e8f3e','#d8b04a'],3],['M4A4 | Howl','rifle',['#ff3b1f','#ffb03b'],3],
+ ['Karambit | Doppler','knife',['#5a2bff','#ff4fd8','#2bd9ff'],4],['Butterfly Knife | Fade','knife',['#ffde3b','#ff4fa3','#6a5cff'],4],['Sport Gloves | Pandora\'s Box','gloves',['#7a2bff','#141414'],4],['AWP | Dragon Lore','sniper',['#e4c26a','#4b7a3a'],4]
+].map(([name,type,cols,r],i)=>({id:'cs'+i,name,r,set:'cs',kind:'img',url:gunSVG(type,cols,R[r].c)}));
 const AUTO_R=[0,1,0,2,0,1,3,0,1,2,0,4,1,0,2];
 const COLORS=['#ff7ab0','#5ee0ff','#ffcf4a','#7cff9b','#ff9a5a','#b99bff','#ff6b81','#7ab8ff'];
 const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',mama:'Мама, дай денег',spam:'Пополнятор'};
@@ -388,10 +409,10 @@ async function loadRepo(){
   for(let i=0;i<imgs.length;i+=4)await Promise.all(imgs.slice(i,i+4).map(makeThumb));
   packSource=PACK.some(p=>p.repo)?`Мемы берутся из папки <b>memes</b> на GitHub: ${PACK.filter(p=>p.repo&&p.kind==='img').length} картинок. Чтобы добавить новые, просто закинь файлы в эту папку.`:'';
 }
-const pool=(set='mell')=>{const im=PACK.filter(p=>p.kind==='img'&&(p.set||'mell')===set);return im.length||set!=='mell'?im:DEF};
+const pool=(set='mell')=>{if(set==='cs')return CSITEMS;const im=PACK.filter(p=>p.kind==='img'&&(p.set||'mell')===set);return im.length||set!=='mell'?im:DEF};
 const setOf=c=>c.set||'mell';
 const vids=()=>PACK.filter(p=>p.kind==='vid');
-const itemById=id=>PACK.find(p=>p.id===id)||DEF.find(d=>d.id===id);
+const itemById=id=>PACK.find(p=>p.id===id)||DEF.find(d=>d.id===id)||CSITEMS.find(d=>d.id===id);
 const vis=(it,big)=>!it?'<span class="emo">❓</span>':it.url?`<img src="${big||!it.th?it.url:it.th}" alt="" decoding="async">`:`<span class="emo">${it.e}</span>`;
 function icard(it,{price,chance,sel,mini}={}){const r=R[it?it.r:0];
   return `<div class="icard${sel?' sel':''}${mini?' mini':''}" style="--rc:${r.c}"><div class="pic">${vis(it)}</div><div class="bar"></div><div class="meta"><div class="nm">${esc(it?it.name:'???')}</div>${price!=null?`<div class="pr">${fmt(price)}</div>`:chance!=null?`<div class="ch">${chance}</div>`:`<div class="ch" style="color:${r.c}">${r.n}</div>`}</div></div>`}
