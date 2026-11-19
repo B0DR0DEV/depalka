@@ -276,6 +276,10 @@ input[type=text],select{height:44px;background:var(--card2);border:1px solid var
 
   <!-- MORE -->
   <div class="pg" id="pg-more">
+    <h2 style="margin-top:4px">💎 Донат</h2>
+    <div class="plist" id="perkList"></div>
+    <div class="row" style="margin-top:10px"><input type="text" id="promo" placeholder="Промокод, например DEP-XXXX-XXXX" maxlength="20" autocomplete="off" style="flex:1;text-transform:uppercase"><button class="btn acc" id="promoBtn">Активировать</button></div>
+    <div class="hint">Как купить: напиши Роме, он скинет промокод. Донат, монеты и предметы вывести обратно в деньги нельзя, это только внутри игры.</div>
     <h2>Пак мемов</h2>
     <div class="hint" id="packSrc"></div>
     <div class="drop" id="drop"><b>Добавить мемы с телефона</b>Картинки станут предметами в кейсах. Хранятся только в этом браузере.</div>
@@ -334,6 +338,7 @@ const CASES=[
   {id:'dodep',name:'Додеп',price:10000,w:[0,30,38,22,10],mult:12,bg:['#d32ce6','#3a1f8a'],badge:'🎰 Додеп'},
   {id:'major',name:'Мажор',price:25000,w:[0,0,50,35,15],mult:20,bg:['#ffd84a','#b8860b'],badge:'💎 Мажор'},
   {id:'millioner',name:'Миллионер',price:50000,w:[0,0,30,45,25],mult:28,bg:['#7cff9b','#0f7a4a'],badge:'💰 Миллионер'},
+  {id:'secret',name:'Секретный',price:20000,w:[0,0,0,55,45],mult:8,bg:['#ffcf4a','#111'],badge:'🗝️ Донат',set:'secret',perk:'secretcase'},
   {id:'lastchance',name:'Последний шанс',price:100000,w:[0,0,0,60,40],mult:38,bg:['#ff2b55','#1a0610'],badge:'☠️ 100к'},
   {id:'yt',name:'Ютуберы',price:250,w:[40,30,18,9,3],bg:['#ff3d3d','#ff9a3d'],badge:'🆕 Новый',set:'yt'},
 ];
@@ -360,7 +365,7 @@ const CSITEMS=[
 ].map(([name,type,cols,r],i)=>({id:'cs'+i,name,r,set:'cs',kind:'img',url:gunSVG(type,cols,R[r].c)}));
 const AUTO_R=[0,1,0,2,0,1,3,0,1,2,0,4,1,0,2];
 const COLORS=['#ff7ab0','#5ee0ff','#ffcf4a','#7cff9b','#ff9a5a','#b99bff','#ff6b81','#7ab8ff'];
-const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',botwin:'Ограблен ботом',mama:'Мама, дай денег',spam:'Пополнятор'};
+const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',botwin:'Ограблен ботом',donat:'Донатер',mama:'Мама, дай денег',spam:'Пополнятор'};
 const BONUS=200,BONUS_CD=5*60*1000;
 
 /* ===== state ===== */
@@ -418,10 +423,11 @@ async function loadRepo(){
   for(let i=0;i<imgs.length;i+=4)await Promise.all(imgs.slice(i,i+4).map(makeThumb));
   packSource=PACK.some(p=>p.repo)?`Мемы берутся из папки <b>memes</b> на GitHub: ${PACK.filter(p=>p.repo&&p.kind==='img').length} картинок. Чтобы добавить новые, просто закинь файлы в эту папку.`:'';
 }
-const pool=(set='mell')=>{if(set==='cs')return CSITEMS;const im=PACK.filter(p=>p.kind==='img'&&(p.set||'mell')===set);return im.length||set!=='mell'?im:DEF};
+const pool=(set='mell')=>{if(set==='cs')return CSITEMS;if(set==='secret')return[...pool('mell'),...pool('yt'),...CSITEMS].filter(i=>i.r>=3);const im=PACK.filter(p=>p.kind==='img'&&(p.set||'mell')===set);return im.length||set!=='mell'?im:DEF};
 const setOf=c=>c.set||'mell';
 const vids=()=>PACK.filter(p=>p.kind==='vid');
-const itemById=id=>PACK.find(p=>p.id===id)||DEF.find(d=>d.id===id)||CSITEMS.find(d=>d.id===id);
+const SPECIAL=[{id:'gold-karambit',name:'★ Золотой Karambit | Депость',r:4,set:'special',kind:'img',url:gunSVG('knife',['#fff6c4','#ffcf4a','#b8860b'],'#ffcf4a')}];
+const itemById=id=>PACK.find(p=>p.id===id)||DEF.find(d=>d.id===id)||CSITEMS.find(d=>d.id===id)||SPECIAL.find(d=>d.id===id);
 const vis=(it,big)=>!it?'<span class="emo">❓</span>':it.url?`<img src="${big||!it.th?it.url:it.th}" alt="" decoding="async">`:`<span class="emo">${it.e}</span>`;
 function icard(it,{price,chance,sel,mini}={}){const r=R[it?it.r:0];
   return `<div class="icard${sel?' sel':''}${mini?' mini':''}" style="--rc:${r.c}"><div class="pic">${vis(it)}</div><div class="bar"></div><div class="meta"><div class="nm">${esc(it?it.name:'???')}</div>${price!=null?`<div class="pr">${fmt(price)}</div>`:chance!=null?`<div class="ch">${chance}</div>`:`<div class="ch" style="color:${r.c}">${r.n}</div>`}</div></div>`}
@@ -476,19 +482,25 @@ function renderCases(){
   $('chips').querySelectorAll('button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;renderCases()});
   const ok=c=>filter==='all'||(filter==='free'&&!c.price)||(filter==='cheap'&&c.price&&c.price<1000)||(filter==='mid'&&c.price>=1000&&c.price<=10000)||(filter==='rich'&&c.price>10000);
   const grp=(title,list)=>list.length?`<h2>${title}</h2><div class="cgrid">${list.map(c=>`<div class="ccard" data-c="${c.id}">${artHTML(c)}<div class="cfoot"><div class="cname">${esc(c.name)}</div>${c.price?`<div class="price">${fmtK(c.price)} <div class="coin" style="width:18px;height:18px;font-size:9px">Д</div></div>`:'<div class="price free">Даром</div>'}</div></div>`).join('')}</div>`:'';
-  const cs=CASES.filter(c=>ok(c)&&pool(setOf(c)).length).sort((a,b)=>a.price-b.price);
+  const cs=CASES.filter(c=>ok(c)&&(!c.perk||hasPerk(c.perk))&&pool(setOf(c)).length).sort((a,b)=>a.price-b.price);
   $('caseList').innerHTML=(pool()===DEF?`<div class="box" style="margin-top:14px;border-color:rgba(155,141,255,.4)"><b>Пока в кейсах стандартный хлам.</b><div class="hint" style="margin-bottom:8px">Загрузи мемы во вкладке «Ещё» или выложи их на GitHub в папку memes.</div><button class="btn acc" onclick="document.querySelector('[data-p=more]').click()">Загрузить мемы</button></div>`:'')
     +grp('Бесплатные',cs.filter(c=>!c.price))+grp('Кейсы',cs.filter(c=>c.price));
   $('caseList').querySelectorAll('.ccard').forEach(el=>el.onclick=()=>{curCase=CASES.find(c=>c.id===el.dataset.c);resetStrip();go('case')});
 }
 function chances(c){const pl=pool(setOf(c)),present=[...new Set(pl.map(i=>i.r))].filter(r=>c.w[r]>0),tot=present.reduce((s,r)=>s+c.w[r],0);
   return pl.filter(i=>c.w[i.r]>0).map(i=>({it:i,ch:c.w[i.r]/tot/pl.filter(x=>x.r===i.r).length})).sort((a,b)=>b.it.r-a.it.r||b.ch-a.ch)}
+const FREE_MAX=100,FREE_WIN=10*60*1000;
+const hasPerk=k=>!!(S.meta.perks&&S.meta.perks[k]);
+const freeLimited=c=>!c.price&&!hasPerk('unlimited');
+function freeLeft(){const now=Date.now();S.meta.freeLog=(S.meta.freeLog||[]).filter(t=>now-t<FREE_WIN);return{left:FREE_MAX-S.meta.freeLog.length,resetMin:S.meta.freeLog.length?Math.ceil((S.meta.freeLog[0]+FREE_WIN-now)/60000):0}}
+const nOf=c=>freeLimited(c)?1:(S.meta.multi||1);
 function renderCase(){const c=curCase;if(!c)return;
   $('caseTitle').textContent=c.name;const p=P();
-  const n=S.meta.multi||1,cost=c.price*n;
-  $('multi').innerHTML=MULTI.map(k=>`<button class="chip${k===n?' on':''}" data-m="${k}">×${k}</button>`).join('');
+  const n=nOf(c),cost=c.price*n,fl=freeLimited(c)?freeLeft():null;
+  $('multi').innerHTML=fl?`<div class="hint" style="margin:0">Бесплатный кейс открывается по одному. Осталось <b style="color:var(--text)">${fl.left}</b> из ${FREE_MAX} за 10 минут${fl.left<FREE_MAX?` · обновится через ${fl.resetMin} мин`:''}. ♾️ Безлимит — в донате.</div>`
+    :MULTI.map(k=>`<button class="chip${k===n?' on':''}" data-m="${k}">×${k}</button>`).join('');
   $('multi').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(opening)return;S.meta.multi=+b.dataset.m;save();resetStrip();renderCase()});
-  $('openBtn').textContent=(n>1?`Открыть ${n} `:'Открыть ')+(cost?`за ${fmt(cost)}`:'бесплатно');$('openBtn').disabled=opening||p.bal<cost;
+  $('openBtn').textContent=(n>1?`Открыть ${n} `:'Открыть ')+(cost?`за ${fmt(cost)}`:'бесплатно');$('openBtn').disabled=opening||p.bal<cost||(fl&&fl.left<=0);if(fl&&fl.left<=0)$('openBtn').textContent=`Лимит, жди ${fl.resetMin} мин`;
   const ch=chances(c);$('caseCount').textContent=ch.length+' шт.';
   $('caseItems').innerHTML=ch.map(x=>icard(x.it,{chance:(x.ch*100<1?(x.ch*100).toFixed(2):(x.ch*100).toFixed(1))+'%'})).join('');
   $('fast').classList.toggle('on',!!S.meta.fast)}
@@ -508,7 +520,34 @@ function renderPot(){const L=$('potList'),tot=potTotal();
   const n=P().inv.filter(x=>SEL.has(x.uid)).length;$('potItems').textContent=n?`Закинуть ${n} мем(ов)`:'Закинуть мемов'}
 const BETS=[50,100,250,500,'ВСЁ'];
 function renderBets(){const b=$('bets');b.innerHTML='';BETS.forEach(v=>{const x=document.createElement('button');x.textContent=v;if(S.bet===v)x.className='sel';x.onclick=()=>{S.bet=v;save();renderBets()};b.appendChild(x)})}
+const PERKS={unlimited:{t:'Безлимит навсегда',d:'Бесплатный кейс без лимита и с ×10',price:'99 ₽',emo:'♾️'},
+  secretcase:{t:'Секретный кейс',d:'Скрытый кейс: только тайные и легенды из всех коллекций',price:'149 ₽',emo:'🗝️'},
+  secretskin:{t:'Секретный скин',d:'«★ Золотой Karambit | Депость» сразу в инвентарь. Есть только у донатеров',price:'49 ₽',emo:'🔪'}};
+const CODE_HASHES={"30c12137eb1b6fbf4721fb32bdf71ac5de091fd99747cfb921b6e8487ce6128a": "unlimited", "95512b25d0c06a6404908eae8cb75163f0e8f8868df0dbe7534a8a5c49072b34": "unlimited", "13631d0fbe0b815dcbc1aa31f2f3500d100e91e8fca2488aaaa9a98aa106a7af": "unlimited", "11abb1d2a893a6fac3caaaf17ea921abab95f753d99e6d212e3b533c5a49990a": "unlimited", "27e6f3d3545acf9ab020d0387fbee6786ceeab2442cc8668b8d5dce8db8d206f": "unlimited", "ff6237ceccdda64d96b71c1fef719ece44cfa1d74542ad30ea60c16eb3dd1ee3": "unlimited", "6aad54ead3e0a9cf2865297cba82ab817c3c6b7a0556b3daee52a84de31a587a": "unlimited", "6075a411f9283a093ab8474d94367c4a959d78aaac741d7e01ddc28f9fe0e291": "unlimited", "9e3caf53d6f34cb8b5159bb9c4fcda280befb3cc81622cb67f4bb70fb6c94577": "unlimited", "ca2d8abdbcc1c03655b7367bee5e736711741cacfd4c1332ed390123a0a163aa": "unlimited", "420300419acbe3c367eb8b412bc3ff38c64f7c859ce002b3834215621dffe320": "secretcase", "e0f5d7f3000587f1d3022403fa42de6d9a6fa4cafdd09d23eb1ece542c0ffa9d": "secretcase", "476d0f81c72dd9fccdd96f49ba19983bb7e4bda3a1d059d09aa05d2c38e8bebb": "secretcase", "48ae7399ab2e4d541071ddd67ca7e724bb3658c19c44b749690f572f33bee39b": "secretcase", "e3986e61dc456fee1e589199870503240c18fc1514dad0a5b76a5f45cad68b64": "secretcase", "cea71599c238f4bb8098e9dcd27ebf5d8cf64c91953b4359aaec36a2fa0d50fa": "secretcase", "9fabcab7000bb8e949f903dfa07a30a07b2cb348aed64bd7d13a427931127ad8": "secretcase", "9140a965d942091c85c888b35693159985e1a5807d21bc819103c1d3437ca746": "secretcase", "125f2f63b9f288769b36f9ef1548cf1a3db742ad368b1c272946b72e36f88754": "secretcase", "6e973ec6c523c1ad18632adf85eec70df86acd5b7c1d2ab15127985f88578ce9": "secretcase", "8041b3ed525f0a3167c4cf13d9181326e18aab3949ca44ef18f26b6a9bf90ce5": "secretskin", "ff5369a865c81e590d6ce8e953d7d7bbf4f9355f154675403e296b2fc8063cb8": "secretskin", "9f787c4afe8ccd218139ecf79ef19e373413b1be31a9bede51ee0345f565795f": "secretskin", "e54cbff79ca6ba75a83470da8b322674bb357fcc57516c5bea00989e7b9dde9b": "secretskin", "a6fad8a936f04095d6ea327878b92283db876e5cf6c007b900524c83b4091e69": "secretskin", "4980176aa39313ae328c59181f99c098c62a05812080207a2648392718963c3c": "secretskin", "71a288f72081255aad4d52e96bd81384fdf81ac620f6c390e366413134e5f34a": "secretskin", "e93f5051af706891d5da9f928cffd99999274ed58f9ff3dce64c00ed0c96b1ef": "secretskin", "f514d58767fa5c220b4ee58b0d08566e6db47f979e7f9efaf710dd37238c2090": "secretskin", "a492bbda6653f6176902c81802455b0ec25f6fbf5a6b2776847ecbd572c34342": "secretskin"};
+function sha256(str){const K=[],H=[],isP=n=>{for(let f=2;f*f<=n;f++)if(n%f===0)return 0;return 1};
+  for(let n=2,i=0;i<64;n++)if(isP(n)){if(i<8)H[i]=(Math.pow(n,1/2)*4294967296)|0;K[i++]=(Math.pow(n,1/3)*4294967296)|0}
+  const b=new TextEncoder().encode(str),l=b.length,w=new Uint32Array(((l+9+63)>>6)<<4);
+  for(let i=0;i<l;i++)w[i>>2]|=b[i]<<(24-(i%4)*8);w[l>>2]|=0x80<<(24-(l%4)*8);w[w.length-1]=l*8;
+  const r=(x,n)=>(x>>>n)|(x<<(32-n));
+  for(let j=0;j<w.length;j+=16){const W=w.slice(j,j+16),M=Array.from(W);let [a,b2,c,d,e,f,g,h]=H;
+    for(let i=0;i<64;i++){if(i>=16)M[i]=(M[i-16]+(r(M[i-15],7)^r(M[i-15],18)^(M[i-15]>>>3))+M[i-7]+(r(M[i-2],17)^r(M[i-2],19)^(M[i-2]>>>10)))|0;
+      const t1=(h+(r(e,6)^r(e,11)^r(e,25))+((e&f)^(~e&g))+K[i]+M[i])|0,t2=((r(a,2)^r(a,13)^r(a,22))+((a&b2)^(a&c)^(b2&c)))|0;
+      h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b2;b2=a;a=(t1+t2)|0}
+    H[0]=(H[0]+a)|0;H[1]=(H[1]+b2)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0}
+  return H.map(x=>(x>>>0).toString(16).padStart(8,'0')).join('')}
+function redeem(){const raw=$('promo').value.trim().toUpperCase().replace(/\s+/g,'');if(!raw)return;
+  const h=sha256('depost:'+raw),perk=CODE_HASHES[h];S.meta.usedCodes=S.meta.usedCodes||[];S.meta.perks=S.meta.perks||{};
+  if(!perk){haptic();return toast('Такого промокода нет')}
+  if(S.meta.usedCodes.includes(h))return toast('Этот код уже активирован на этом телефоне');
+  S.meta.usedCodes.push(h);const P0=PERKS[perk],p=P();
+  if(perk==='secretskin'){p.inv.push({uid:'s'+Date.now(),itemId:'gold-karambit',price:50000});S.meta.perks.secretskin=(S.meta.perks.secretskin||0)+1}
+  else S.meta.perks[perk]=true;
+  found('donat');$('promo').value='';save();render();haptic('heavy');
+  overlay(perk==='secretskin'?{vis:vis(SPECIAL[0],true),rc:'#ffcf4a',title:'СЕКРЕТНЫЙ СКИН',text:`${p.name} получил «${SPECIAL[0].name}». Он уже в инвентаре.`}
+    :{vis:emojiOv(P0.emo),bare:true,title:P0.t.toUpperCase(),text:perk==='unlimited'?'Бесплатный кейс теперь без лимита и с ×10. Навсегда на этом телефоне.':'В списке кейсов появился «Секретный». Только тайные и легенды.'})}
 function renderMore(){
+  $('perkList').innerHTML=Object.entries(PERKS).map(([k,v])=>{const on=k==='secretskin'?0:hasPerk(k);
+    return `<div class="prow"><span style="font-size:28px;width:40px;text-align:center">${v.emo}</span><div style="flex:1"><b>${v.t}</b><div style="font-size:12px;color:var(--muted)">${v.d}</div></div>${on?'<span class="tag">ЕСТЬ</span>':`<span style="font-weight:800;white-space:nowrap">${v.price}</span>`}</div>`}).join('');
   $('packSrc').innerHTML=packSource||'Своей папки с мемами на GitHub пока нет, поэтому мемы можно добавить прямо отсюда.';
   const L=$('packList');L.innerHTML='';
   PACK.forEach(it=>{const d=document.createElement('div');d.className='prow';
@@ -540,7 +579,8 @@ $('topup').onclick=()=>{
   const p=P(),left=(p.bonusAt||0)+BONUS_CD-now;
   if(left<=0){p.bal+=BONUS;p.bonusAt=now;save();render();haptic('medium');
     if(!S.found.mama){found('mama');overlay({vis:emojiOv('👩‍🍳'),bare:true,title:'МАМА ДАЛА',text:`${p.name} попросил у мамы на обед. Мама дала ${BONUS} монет и сказала не тратить на ерунду.`})}else toast(`+${BONUS} 🪙 бонус`)}
-  else{const m=Math.ceil(left/60000);sheet(`<h3>Пополнить</h3><div class="hint">Деньги тут ненастоящие. Каждые 5 минут можно взять бонус +${BONUS} монет. Следующий через ${m} мин.</div><div class="hint">А ещё можно открыть бесплатный кейс и продать то, что выпало.</div><button class="btn acc" style="width:100%" id="gofree">К бесплатному кейсу</button>`);
+  else{const m=Math.ceil(left/60000);sheet(`<h3>Пополнить</h3><div class="hint">Деньги тут ненастоящие. Каждые 5 минут можно взять бонус +${BONUS} монет. Следующий через ${m} мин.</div><div class="hint">А ещё можно открыть бесплатный кейс и продать то, что выпало.</div><button class="btn acc" style="width:100%" id="gofree">К бесплатному кейсу</button><button class="btn" style="width:100%;margin-top:8px" id="gopromo">💎 Ввести промокод</button>`);
+    $('gopromo').onclick=()=>{closeSheet();go('more');setTimeout(()=>$('promo').focus(),200)};
     $('gofree').onclick=()=>{closeSheet();curCase=CASES[0];resetStrip();go('case')}}};
 
 /* ===== cases ===== */
@@ -552,12 +592,13 @@ const MULTI=[1,2,3,5,10];
 function stripsHTML(n,cards){const box=$('strips');box.className='strips'+(n>=6?' two':'');
   box.innerHTML=cards.map(h=>`<div class="strip${n>1?' mstrip':''}"><div class="track">${h}</div><div class="fade"></div><div class="marker"></div></div>`).join('');
   return [...box.querySelectorAll('.track')]}
-function resetStrip(){if(!curCase)return;const n=S.meta.multi||1,set=setOf(curCase),cards=[];
+function resetStrip(){if(!curCase)return;const n=nOf(curCase),set=setOf(curCase),cards=[];
   for(let k=0;k<n;k++){let h='';for(let i=0;i<(n>1?6:12);i++)h+=icard(pickItem(curCase.w,set),{mini:n>1});cards.push(h)}stripsHTML(n,cards)}
 $('caseBack').onclick=()=>{if(!opening)go('cases')};
 $('fast').onclick=()=>{S.meta.fast=!S.meta.fast;save();renderCase()};
 $('openBtn').onclick=()=>{
-  const c=curCase,p=P();if(opening||!c)return;const n=S.meta.multi||1,cost=c.price*n,set=setOf(c);
+  const c=curCase,p=P();if(opening||!c)return;const n=nOf(c),cost=c.price*n,set=setOf(c);
+  if(freeLimited(c)){if(freeLeft().left<=0)return toast('Лимит бесплатного кейса. Подожди или возьми безлимит');S.meta.freeLog.push(Date.now())}
   if(p.bal<cost)return toast(n>1?'Не хватает монет. Попробуй открыть меньше':'Не хватает монет. Открой бесплатный и продай что-нибудь');
   p.bal-=cost;const mini=n>1,WI=mini?20:30,N=mini?24:36,wins=[],cards=[];
   for(let k=0;k<n;k++){const w=pickItem(c.w,set);wins.push(w);let h='';for(let i=0;i<N;i++)h+=icard(i===WI?w:pickItem(c.w,set),{mini});cards.push(h)}
@@ -681,6 +722,7 @@ $('addBtn').onclick=()=>{addPlayer($('newName').value);$('newName').value=''};$(
 let rs=false,rst;$('resetBtn').onclick=()=>{if(!rs){rs=true;$('resetBtn').textContent='Точно? Жми ещё раз';rst=setTimeout(()=>{rs=false;$('resetBtn').textContent='Обнулить игру'},3000);return}
   clearTimeout(rst);rs=false;$('resetBtn').textContent='Обнулить игру';const meta=S.meta;S=defaultState();S.meta=meta;SEL.clear();save();render();toast('Игра обнулена. Мемы остались')};
 
+$('promoBtn').onclick=redeem;$('promo').onkeydown=e=>{if(e.key==='Enter')redeem()};
 /* ===== welcome ===== */
 function showWelcome(){const w=$('welcome');if(w.classList.contains('show'))return;w.classList.add('show');
   const i=$('wName');if(tgName&&!i.value){i.value=tgName;i.oninput()}setTimeout(()=>i.focus(),100)}
