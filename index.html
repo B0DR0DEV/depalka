@@ -385,6 +385,7 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
     <div class="hint" style="margin-top:-4px">Нажми на кружок, чтобы поставить аватарку. Новое имя само превращается в «-ость».</div>
     <div class="plist" id="plList"></div>
     <div class="row" style="margin-top:10px"><input type="text" id="newName" placeholder="Имя, например Дима" maxlength="20" style="flex:1"><button class="btn acc" id="addBtn">+ игрок</button></div>
+    <div class="hint" id="onStatus" style="margin-top:18px"></div>
     <div class="row" style="margin-top:22px"><button class="btn" id="resetBtn">Обнулить игру</button><span class="hint" style="margin:0">🥚 Пасхалок найдено: <b id="eggCount" style="color:var(--gold)">0</b> из ???</span></div>
   </div>
 </div>
@@ -670,7 +671,7 @@ function renderPacks(){const L=$('myPacks'),ps=Object.values(S.meta.packs||{});
   ps.forEach(pk=>{const its=PACKITEMS.filter(i=>i.pack===pk.id),d=document.createElement('div');d.className='prow';
     d.innerHTML=`<div class="th">${its[0]?vis(its[0]):''}</div><div style="flex:1"><b>${esc(pk.name||pk.id)}</b><div style="font-size:12px;color:var(--muted)">${its.length} мемов · кейс за ${fmt(+pk.price||0)}</div></div><button class="del" title="Убрать пак">✕</button>`;
     d.querySelector('.del').onclick=()=>{delete S.meta.packs[pk.id];rebuildPacks();save();render();toast('Пак убран')};L.appendChild(d)})}
-function renderMore(){renderPacks();
+function renderMore(){renderPacks();$('onStatus').innerHTML=onlineReady?'🟢 Онлайн подключён':(ONLINE.url?`🔴 Онлайн не подключён${onlineErr?': '+esc(onlineErr):''}`:'⚪ Онлайн выключен');
   $('perkList').innerHTML=Object.entries(PERKS).map(([k,v])=>{const on=k==='secretskin'?0:hasPerk(k);
     return `<div class="prow"><span style="font-size:28px;width:40px;text-align:center">${v.emo}</span><div style="flex:1"><b>${v.t}</b><div style="font-size:12px;color:var(--muted)">${v.d}</div></div>${on?'<span class="tag">ЕСТЬ</span>':`<span style="font-weight:800;white-space:nowrap">${v.price}</span>`}</div>`}).join('');
   $('packSrc').innerHTML=packSource||'Своей папки с мемами на GitHub пока нет, поэтому мемы можно добавить прямо отсюда.';
@@ -1015,7 +1016,7 @@ $('ctGo').onclick=()=>{if(ctBusy)return;const p=P(),sel=ctPool().filter(x=>ctSel
     overlay({vis:vis(out,true),rc:R[out.r].c,title:'КОНТРАКТ ПОДПИСАН',text:`10 мемов на ${fmt(sum)} 🪙 превратились в «${out.name}» за ${fmt(price)} 🪙 ${price>=sum?'— в плюс 🔥':'— в минус, бывает'}`})},950)};
 
 /* ===== ОНЛАЙН (Supabase) ===== */
-let DB=null,onlineReady=false,GFEED=null,roomTimer=null,roomUnsub=null,ROOM=null,roomAnimDone={};
+let onlineErr='',DB=null,onlineReady=false,GFEED=null,roomTimer=null,roomUnsub=null,ROOM=null,roomAnimDone={};
 const loadScript=src=>new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=src;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)});
 const genCode=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random()*24)]).join('');
 const mainP=()=>S.players[0];
@@ -1023,31 +1024,39 @@ async function onlineInit(){
   try{
     if(window.__DBMOCK){DB=window.__DBMOCK;await DB.init()}
     else{if(!ONLINE.url||!ONLINE.key)return;
-      await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js');
-      const sb=supabase.createClient(ONLINE.url,ONLINE.key,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'depost-auth'}});
-      let {data:{session}}=await sb.auth.getSession();
-      if(!session){const r=await sb.auth.signInAnonymously();if(r.error)throw r.error;session=r.data.session}
-      const uid=session.user.id,ok=r=>{if(r.error)throw r.error;return r.data};
+      // без внешних библиотек: прямые запросы к Supabase (CDN в России бывает недоступен)
+      const U=ONLINE.url.replace(/\/$/,''),KEY=ONLINE.key,SK='depost-auth2';
+      let ses=null;try{ses=JSON.parse(localStorage.getItem(SK))}catch(e){}
+      const saveSes=x=>{ses={access_token:x.access_token,refresh_token:x.refresh_token,expires_at:Date.now()+(x.expires_in||3600)*1000,uid:(x.user||{}).id||(ses&&ses.uid)};try{localStorage.setItem(SK,JSON.stringify(ses))}catch(e){}};
+      const authReq=async(path,body)=>{const r=await fetch(U+'/auth/v1/'+path,{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+        const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error('auth '+r.status+': '+(j.msg||j.error_description||j.message||j.error||''));return j};
+      const ensure=async()=>{if(ses&&ses.access_token&&ses.expires_at-Date.now()>60000)return;
+        if(ses&&ses.refresh_token){try{saveSes(await authReq('token?grant_type=refresh_token',{refresh_token:ses.refresh_token}));return}catch(e){}}
+        saveSes(await authReq('signup',{}))};
+      await ensure();
+      const rest=async(method,path,body,prefer)=>{await ensure();const h={apikey:KEY,Authorization:'Bearer '+ses.access_token,'Content-Type':'application/json'};if(prefer)h.Prefer=prefer;
+        const r=await fetch(U+'/rest/v1/'+path,{method,headers:h,body:body===undefined?undefined:JSON.stringify(body)});const t=await r.text();let j=null;try{j=t?JSON.parse(t):null}catch(e){}
+        if(!r.ok){const e=new Error((j&&(j.message||j.hint))||('HTTP '+r.status));e.status=r.status;throw e}return j};
+      const uid=ses.uid,q=encodeURIComponent;
       DB={uid,
-        upsertPlayer:async row=>ok(await sb.from('players').upsert({id:uid,...row,updated_at:new Date().toISOString()})),
-        top:async col=>ok(await sb.from('players').select('id,name,color,wealth,cases,best_name,best_price,best_img').order(col,{ascending:false}).limit(50))||[],
-        feed:async()=>ok(await sb.from('feed').select('*').order('created_at',{ascending:false}).limit(20))||[],
-        addFeed:async row=>ok(await sb.from('feed').insert(row)),
-        onFeed:cb=>{sb.channel('feed').on('postgres_changes',{event:'INSERT',schema:'public',table:'feed'},p=>cb(p.new)).subscribe()},
-        createRoom:async(kind,config)=>{for(let i=0;i<6;i++){const code=genCode(),r=await sb.from('rooms').insert({code,kind,config});if(!r.error)return code}throw new Error('Не получилось создать комнату')},
-        getRoom:async code=>{const [a,b]=await Promise.all([sb.from('rooms').select('*').eq('code',code).maybeSingle(),sb.from('room_players').select('*').eq('room',code).order('joined_at')]);
-          return a.data?{room:a.data,players:b.data||[]}:null},
-        join:async(code,row)=>ok(await sb.from('room_players').upsert({room:code,user_id:uid,...row})),
-        leave:async code=>ok(await sb.from('room_players').delete().eq('room',code).eq('user_id',uid)),
-        spin:async code=>ok(await sb.rpc('spin_room',{p_code:code})),
-        onRoom:(code,cb)=>{const ch=sb.channel('room-'+code).on('postgres_changes',{event:'*',schema:'public',table:'rooms',filter:'code=eq.'+code},cb)
-          .on('postgres_changes',{event:'*',schema:'public',table:'room_players',filter:'room=eq.'+code},cb).subscribe();return()=>sb.removeChannel(ch)}};
+        upsertPlayer:row=>rest('POST','players?on_conflict=id',{id:uid,...row,updated_at:new Date().toISOString()},'resolution=merge-duplicates,return=minimal'),
+        top:async col=>(await rest('GET',`players?select=id,name,color,wealth,cases,best_name,best_price,best_img&order=${col}.desc&limit=50`))||[],
+        feed:async()=>(await rest('GET','feed?select=*&order=created_at.desc&limit=20'))||[],
+        addFeed:row=>rest('POST','feed',row,'return=minimal'),
+        onFeed:cb=>{setInterval(async()=>{try{const f=await rest('GET','feed?select=*&order=created_at.desc&limit=20');(f||[]).slice().reverse().forEach(cb)}catch(e){}},8000)},
+        createRoom:async(kind,config)=>{for(let i=0;i<6;i++){const code=genCode();try{await rest('POST','rooms',{code,host:uid,kind,config},'return=minimal');return code}catch(e){if(e.status!==409)throw e}}throw new Error('Не получилось создать комнату')},
+        getRoom:async code=>{const [a,b]=await Promise.all([rest('GET',`rooms?code=eq.${q(code)}&select=*`),rest('GET',`room_players?room=eq.${q(code)}&select=*&order=joined_at.asc`)]);
+          return a&&a[0]?{room:a[0],players:b||[]}:null},
+        join:(code,row)=>rest('POST','room_players?on_conflict=room,user_id',{room:code,user_id:uid,...row},'resolution=merge-duplicates,return=minimal'),
+        leave:code=>rest('DELETE',`room_players?room=eq.${q(code)}&user_id=eq.${q(uid)}`),
+        spin:code=>rest('POST','rpc/spin_room',{p_code:code}),
+        onRoom:()=>()=>{}};
     }
-    onlineReady=true;
+    onlineReady=true;onlineErr='';
     GFEED=(await DB.feed()).slice(0,20);DB.onFeed(row=>{if(!GFEED.some(x=>x.id===row.id)){GFEED.unshift(row);GFEED=GFEED.slice(0,20);renderLive()}});
     setInterval(async()=>{try{const f=await DB.feed();if(f.length)GFEED=f.slice(0,20);renderLive()}catch(e){}},45000);
     onlineSync(true);render();
-  }catch(e){console.log('online off',e);onlineReady=false;render()}}
+  }catch(e){console.log('online off',e);onlineErr=String(e&&e.message||e);onlineReady=false;render()}}
 const absImg=it=>{if(!it)return '';const u=it.th||it.url||'';if(!u||u.startsWith('blob:'))return '';if(u.startsWith('data:'))return u.length<6000?u:'';try{return new URL(u,location.href).href}catch(e){return ''}};
 const onlineItem=it=>it&&!/^(p|v)\d/.test(it.id)&&!String(it.id).startsWith('pk:');
 let syncT=null,lastSync=0;
@@ -1062,7 +1071,7 @@ function shareDrop(p,d){if(!onlineReady||!d||p!==mainP())return;const it=d.w||it
 /* --- таблица лидеров --- */
 let topTab='wealth';
 async function renderTop(){const L=$('topList');$('topSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===topTab));
-  if(!onlineReady){L.innerHTML='<div class="hint">Онлайн не подключён. Таблица лидеров работает на сайте игры, когда есть интернет.</div>';return}
+  if(!onlineReady){L.innerHTML=`<div class="hint">Онлайн не подключён.${onlineErr?' Ошибка: <b>'+esc(onlineErr)+'</b>':' Таблица лидеров работает на сайте игры, когда есть интернет.'}</div><button class="btn acc" id="onRetry">Подключиться снова</button>`;$('onRetry').onclick=()=>{L.innerHTML='<div class="hint">Подключаюсь…</div>';onlineInit().then(renderTop)};return}
   L.innerHTML='<div class="hint">Загружаю…</div>';
   try{const rows=await DB.top(topTab==='best'?'best_price':topTab);
     L.innerHTML=rows.length?rows.map((r,i)=>{const v=topTab==='wealth'?fmt(r.wealth)+' 🪙':topTab==='cases'?fmt(r.cases)+' кейсов':fmt(r.best_price)+' 🪙';
