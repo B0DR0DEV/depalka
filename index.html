@@ -90,6 +90,11 @@ h2 small{font:700 14px Manrope;color:var(--muted);margin-left:6px}
 .marker{position:absolute;top:0;bottom:0;left:50%;width:3px;margin-left:-1.5px;background:var(--gold);box-shadow:0 0 14px var(--gold);z-index:2}
 .marker::before,.marker::after{content:"";position:absolute;left:50%;transform:translateX(-50%);border:8px solid transparent}
 .marker::before{top:0;border-top-color:var(--gold)}.marker::after{bottom:0;border-bottom-color:var(--gold)}
+.strips{display:grid;gap:8px}.strips.two{grid-template-columns:1fr 1fr}
+.mstrip{height:100px;border-radius:18px}.mstrip .track{top:8px;gap:6px}.mstrip .marker::before,.mstrip .marker::after{border-width:6px}
+.icard.mini{width:84px}.icard.mini .meta{display:none}.icard.mini .bar{height:5px}
+.ovgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px;width:min(440px,88vw);margin:0 auto 16px;max-height:48vh;overflow:auto;padding:4px}
+.ovgrid .icard .meta{padding:4px 5px 6px}.ovgrid .icard .nm{font-size:10px}
 .strip .fade{position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(90deg,var(--bg) 0,transparent 25%,transparent 75%,var(--bg) 100%)}
 .openrow{display:flex;gap:10px;align-items:center;margin:12px 0}
 .bigbtn{flex:1;height:58px;border-radius:18px;border:none;background:linear-gradient(180deg,#8f80ff,#6a59f5);font:800 18px Unbounded;cursor:pointer;box-shadow:0 8px 24px rgba(117,101,255,.35)}
@@ -225,7 +230,8 @@ input[type=text],select{height:44px;background:var(--card2);border:1px solid var
   <div class="pg" id="pg-case">
     <button class="back" id="caseBack">‹ Назад</button>
     <h2 id="caseTitle" style="margin-top:0"></h2>
-    <div class="strip" id="cstrip"><div class="track" id="ctrack"></div><div class="fade"></div><div class="marker"></div></div>
+    <div class="strips" id="strips"></div>
+    <div class="chips" id="multi" style="margin:12px 0 0"></div>
     <div class="openrow"><button class="bigbtn" id="openBtn">Открыть</button><div class="toggle" id="fast"><i>⚡</i>Быстро</div></div>
     <h2>Содержимое <small id="caseCount"></small></h2>
     <div class="igrid" id="caseItems"></div>
@@ -319,6 +325,7 @@ const CASES=[
   {id:'voznya',name:'Пошла возня',price:400,w:[35,35,18,9,3],bg:['#ff5a5a','#a83dff']},
   {id:'gold',name:'Легендарный',price:600,w:[25,33,22,14,6],bg:['#ffd84a','#ff8a2b']},
   {id:'lux',name:'Только редкие',price:1500,w:[0,0,55,35,10],bg:['#ff3dbd','#7a2bff'],badge:'🔥 Хайроллер'},
+  {id:'yt',name:'Ютуберы',price:250,w:[40,30,18,9,3],bg:['#ff3d3d','#ff9a3d'],badge:'🆕 Новый',set:'yt'},
 ];
 const DEF=[{id:'d0',name:'Носок',e:'🧦',r:0},{id:'d1',name:'Картошка',e:'🥔',r:0},{id:'d2',name:'Тапок',e:'🩴',r:0},{id:'d3',name:'Чайник',e:'🫖',r:1},{id:'d4',name:'Жаба',e:'🐸',r:1},{id:'d5',name:'Шаурма',e:'🌯',r:2},{id:'d6',name:'Корона',e:'👑',r:3},{id:'d7',name:'Бриллиант',e:'💎',r:4}];
 const AUTO_R=[0,1,0,2,0,1,3,0,1,2,0,4,1,0,2];
@@ -374,19 +381,20 @@ async function loadRepo(){
   const used=new Set();let ai=0;
   files.forEach(f=>{
     if(IMG.test(f)){const e=entries.find(x=>x.file===f)||entries.find(x=>x.match&&f.includes(x.match));
-      if(e)used.add(e);PACK.push({id:'m:'+(e?e.file:f),name:e?e.name:f.replace(/\.[^.]+$/,''),r:e?e.rarity:AUTO_R[ai++%AUTO_R.length],kind:'img',url:'memes/'+encodeURIComponent(f),repo:true})}
+      if(e)used.add(e);PACK.push({id:'m:'+(e?e.file:f),name:e?e.name:f.replace(/\.[^.]+$/,''),r:e?e.rarity:AUTO_R[ai++%AUTO_R.length],set:(e&&e.set)||'mell',kind:'img',url:'memes/'+encodeURIComponent(f),repo:true})}
   });
   // маленькие превью: готовые из memes/thumbs, а если их нет — делаем сами из картинки (на телефоне большие картинки тормозят)
   const imgs=PACK.filter(p=>p.repo&&p.kind==='img');
   for(let i=0;i<imgs.length;i+=4)await Promise.all(imgs.slice(i,i+4).map(makeThumb));
   packSource=PACK.some(p=>p.repo)?`Мемы берутся из папки <b>memes</b> на GitHub: ${PACK.filter(p=>p.repo&&p.kind==='img').length} картинок. Чтобы добавить новые, просто закинь файлы в эту папку.`:'';
 }
-const pool=()=>{const im=PACK.filter(p=>p.kind==='img');return im.length?im:DEF};
+const pool=(set='mell')=>{const im=PACK.filter(p=>p.kind==='img'&&(p.set||'mell')===set);return im.length||set!=='mell'?im:DEF};
+const setOf=c=>c.set||'mell';
 const vids=()=>PACK.filter(p=>p.kind==='vid');
 const itemById=id=>PACK.find(p=>p.id===id)||DEF.find(d=>d.id===id);
 const vis=(it,big)=>!it?'<span class="emo">❓</span>':it.url?`<img src="${big||!it.th?it.url:it.th}" alt="" decoding="async">`:`<span class="emo">${it.e}</span>`;
-function icard(it,{price,chance,sel}={}){const r=R[it?it.r:0];
-  return `<div class="icard${sel?' sel':''}" style="--rc:${r.c}"><div class="pic">${vis(it)}</div><div class="bar"></div><div class="meta"><div class="nm">${esc(it?it.name:'???')}</div>${price!=null?`<div class="pr">${fmt(price)}</div>`:chance!=null?`<div class="ch">${chance}</div>`:`<div class="ch" style="color:${r.c}">${r.n}</div>`}</div></div>`}
+function icard(it,{price,chance,sel,mini}={}){const r=R[it?it.r:0];
+  return `<div class="icard${sel?' sel':''}${mini?' mini':''}" style="--rc:${r.c}"><div class="pic">${vis(it)}</div><div class="bar"></div><div class="meta"><div class="nm">${esc(it?it.name:'???')}</div>${price!=null?`<div class="pr">${fmt(price)}</div>`:chance!=null?`<div class="ch">${chance}</div>`:`<div class="ch" style="color:${r.c}">${r.n}</div>`}</div></div>`}
 const avaHTML=p=>p.avatar?`<img src="${p.avatar}" alt="">`:esc(p.name[0]);
 const invValue=p=>p.inv.reduce((s,x)=>s+x.price,0);
 
@@ -396,7 +404,7 @@ function found(k){if(!S.found[k]){S.found[k]=1;save();$('eggCount').textContent=
 const Q=[];let ovOpen=false;
 function overlay(o){Q.push(o);if(!ovOpen)nextOv()}
 function nextOv(){const o=Q.shift();if(!o){ovOpen=false;$('ov').classList.remove('show');return}
-  ovOpen=true;const v=$('ovVis');v.className='ovvis'+(o.round?' round':'')+(o.bare?' bare':'');v.innerHTML=o.vis||'';
+  ovOpen=true;const v=$('ovVis');v.className=o.grid?'ovgrid':'ovvis'+(o.round?' round':'')+(o.bare?' bare':'');v.innerHTML=o.grid||o.vis||'';
   $('ov').style.setProperty('--rc',o.rc||'#ffcf4a');$('ovTitle').textContent=o.title;$('ovText').textContent=o.text||'';
   const b=$('ovBtns');b.innerHTML='';(o.buttons||[{t:'ахахах ок'}]).forEach(x=>{const e=document.createElement('button');e.className='btn '+(x.c||'acc');e.textContent=x.t;e.onclick=()=>{x.fn&&x.fn();nextOv()};b.appendChild(e)});
   $('ov').classList.add('show')}
@@ -422,7 +430,7 @@ function renderLive(){const L=$('live');
   L.innerHTML=S.live.map(x=>{const it=itemById(x.itemId),p=pById(x.pid);if(!it||!p)return '';const r=R[it.r];
     return `<div class="lcard"><div class="th" style="background:radial-gradient(circle,${r.c}66,transparent 70%)">${vis(it)}</div><div><div class="who"><div class="ava s" style="background:${p.color}">${avaHTML(p)}</div>${esc(p.name)}</div><div class="pr">${fmt(x.price)} 🪙</div></div></div>`}).join('')}
 function artHTML(c,big){
-  const pl=pool(),sorted=[...pl].sort((a,b)=>b.r-a.r);
+  const pl=pool(setOf(c)),sorted=[...pl].sort((a,b)=>b.r-a.r);
   const allowed=sorted.filter(i=>c.w[i.r]>0),seed=CASES.indexOf(c);
   const pick=k=>allowed.length?allowed[(seed*3+k*5)%allowed.length]:null;
   const top=allowed.filter(i=>i.r===Math.max(...allowed.map(x=>x.r)));
@@ -437,16 +445,19 @@ function renderCases(){
   $('chips').querySelectorAll('button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;renderCases()});
   const ok=c=>filter==='all'||(filter==='free'&&!c.price)||(filter==='cheap'&&c.price&&c.price<=500)||(filter==='rich'&&c.price>500);
   const grp=(title,list)=>list.length?`<h2>${title}</h2><div class="cgrid">${list.map(c=>`<div class="ccard" data-c="${c.id}">${artHTML(c)}<div class="cfoot"><div class="cname">${esc(c.name)}</div>${c.price?`<div class="price">${fmt(c.price)} <div class="coin" style="width:18px;height:18px;font-size:9px">Д</div></div>`:'<div class="price free">Даром</div>'}</div></div>`).join('')}</div>`:'';
-  const cs=CASES.filter(ok).sort((a,b)=>a.price-b.price);
+  const cs=CASES.filter(c=>ok(c)&&pool(setOf(c)).length).sort((a,b)=>a.price-b.price);
   $('caseList').innerHTML=(pool()===DEF?`<div class="box" style="margin-top:14px;border-color:rgba(155,141,255,.4)"><b>Пока в кейсах стандартный хлам.</b><div class="hint" style="margin-bottom:8px">Загрузи мемы во вкладке «Ещё» или выложи их на GitHub в папку memes.</div><button class="btn acc" onclick="document.querySelector('[data-p=more]').click()">Загрузить мемы</button></div>`:'')
     +grp('Бесплатные',cs.filter(c=>!c.price))+grp('Кейсы',cs.filter(c=>c.price));
   $('caseList').querySelectorAll('.ccard').forEach(el=>el.onclick=()=>{curCase=CASES.find(c=>c.id===el.dataset.c);resetStrip();go('case')});
 }
-function chances(c){const pl=pool(),present=[...new Set(pl.map(i=>i.r))].filter(r=>c.w[r]>0),tot=present.reduce((s,r)=>s+c.w[r],0);
+function chances(c){const pl=pool(setOf(c)),present=[...new Set(pl.map(i=>i.r))].filter(r=>c.w[r]>0),tot=present.reduce((s,r)=>s+c.w[r],0);
   return pl.filter(i=>c.w[i.r]>0).map(i=>({it:i,ch:c.w[i.r]/tot/pl.filter(x=>x.r===i.r).length})).sort((a,b)=>b.it.r-a.it.r||b.ch-a.ch)}
 function renderCase(){const c=curCase;if(!c)return;
   $('caseTitle').textContent=c.name;const p=P();
-  $('openBtn').textContent=c.price?`Открыть за ${fmt(c.price)}`:'Открыть бесплатно';$('openBtn').disabled=opening||p.bal<c.price;
+  const n=S.meta.multi||1,cost=c.price*n;
+  $('multi').innerHTML=MULTI.map(k=>`<button class="chip${k===n?' on':''}" data-m="${k}">×${k}</button>`).join('');
+  $('multi').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(opening)return;S.meta.multi=+b.dataset.m;save();resetStrip();renderCase()});
+  $('openBtn').textContent=(n>1?`Открыть ${n} `:'Открыть ')+(cost?`за ${fmt(cost)}`:'бесплатно');$('openBtn').disabled=opening||p.bal<cost;
   const ch=chances(c);$('caseCount').textContent=ch.length+' шт.';
   $('caseItems').innerHTML=ch.map(x=>icard(x.it,{chance:(x.ch*100<1?(x.ch*100).toFixed(2):(x.ch*100).toFixed(1))+'%'})).join('');
   $('fast').classList.toggle('on',!!S.meta.fast)}
@@ -500,32 +511,47 @@ $('topup').onclick=()=>{
     $('gofree').onclick=()=>{closeSheet();curCase=CASES[0];resetStrip();go('case')}}};
 
 /* ===== cases ===== */
-function pickItem(w){const pl=pool().filter(i=>w[i.r]>0);const present=[...new Set(pl.map(x=>x.r))];
+function pickItem(w,set){const pl=pool(set).filter(i=>w[i.r]>0);const present=[...new Set(pl.map(x=>x.r))];
   const tot=present.reduce((s,r)=>s+w[r],0);let x=Math.random()*tot,rr=present[0];for(const r of present){x-=w[r];if(x<=0){rr=r;break}}
   return rnd(pl.filter(i=>i.r===rr))}
 let opening=false;
-function resetStrip(){const tr=$('ctrack');if(!curCase)return;let h='';for(let i=0;i<12;i++)h+=icard(pickItem(curCase.w));tr.style.transition='none';tr.style.transform='translateX(0)';tr.innerHTML=h}
+const MULTI=[1,2,3,5,10];
+function stripsHTML(n,cards){const box=$('strips');box.className='strips'+(n>=6?' two':'');
+  box.innerHTML=cards.map(h=>`<div class="strip${n>1?' mstrip':''}"><div class="track">${h}</div><div class="fade"></div><div class="marker"></div></div>`).join('');
+  return [...box.querySelectorAll('.track')]}
+function resetStrip(){if(!curCase)return;const n=S.meta.multi||1,set=setOf(curCase),cards=[];
+  for(let k=0;k<n;k++){let h='';for(let i=0;i<(n>1?6:12);i++)h+=icard(pickItem(curCase.w,set),{mini:n>1});cards.push(h)}stripsHTML(n,cards)}
 $('caseBack').onclick=()=>{if(!opening)go('cases')};
 $('fast').onclick=()=>{S.meta.fast=!S.meta.fast;save();renderCase()};
 $('openBtn').onclick=()=>{
-  const c=curCase,p=P();if(opening||!c)return;if(p.bal<c.price)return toast('Не хватает монет. Открой бесплатный и продай что-нибудь');
-  p.bal-=c.price;const win=pickItem(c.w),WI=30,N=36;let h='';for(let i=0;i<N;i++)h+=icard(i===WI?win:pickItem(c.w));
+  const c=curCase,p=P();if(opening||!c)return;const n=S.meta.multi||1,cost=c.price*n,set=setOf(c);
+  if(p.bal<cost)return toast(n>1?'Не хватает монет. Попробуй открыть меньше':'Не хватает монет. Открой бесплатный и продай что-нибудь');
+  p.bal-=cost;const mini=n>1,WI=mini?20:30,N=mini?24:36,wins=[],cards=[];
+  for(let k=0;k<n;k++){const w=pickItem(c.w,set);wins.push(w);let h='';for(let i=0;i<N;i++)h+=icard(i===WI?w:pickItem(c.w,set),{mini});cards.push(h)}
   opening=true;haptic('medium');renderHdr();$('openBtn').disabled=true;
-  const tr=$('ctrack');tr.style.transition='none';tr.style.transform='translateX(0)';tr.innerHTML=h;
-  const fast=!!S.meta.fast,dur=fast?1.1:5.2,cw=128,sw=$('cstrip').clientWidth,off=WI*cw+60-sw/2+(Math.random()-.5)*90;
+  const trs=stripsHTML(n,cards);
+  {const y=$('strips').getBoundingClientRect().top+scrollY-74;if(Math.abs(scrollY-y)>40)scrollTo({top:Math.max(0,y),behavior:'smooth'})}
+  const fast=!!S.meta.fast,dur=fast?1.1:(mini?4.2:5.2),cw=mini?90:128,half=mini?42:60;
   // сначала дать картинкам раскодироваться, потом крутить — иначе на телефоне лента дёргается
-  const ready=Promise.all([...tr.querySelectorAll('img')].map(i=>i.decode?i.decode().catch(()=>{}):0));
-  Promise.race([ready,new Promise(r=>setTimeout(r,700))]).then(()=>requestAnimationFrame(()=>{
-  tr.offsetWidth;tr.style.transition=`transform ${dur}s cubic-bezier(.08,.7,.12,1)`;tr.style.transform=`translateX(${-off}px)`;
+  const ready=Promise.all([...$('strips').querySelectorAll('img')].map(i=>i.decode?i.decode().catch(()=>{}):0));
+  Promise.race([ready,new Promise(r=>setTimeout(r,800))]).then(()=>requestAnimationFrame(()=>{
+  let maxEnd=0;
+  trs.forEach((tr,k)=>{const sw=tr.parentNode.clientWidth,off=WI*cw+half-sw/2+(Math.random()-.5)*(mini?50:90),d=dur+(mini?k*.12:0);maxEnd=Math.max(maxEnd,d);
+    tr.offsetWidth;tr.style.transition=`transform ${d}s cubic-bezier(.08,.7,.12,1)`;tr.style.transform=`translateX(${-off}px)`});
   setTimeout(()=>{
-    const r=R[win.r],price=Math.round(r.p*(.8+Math.random()*.4)),uid='i'+Date.now()+Math.random().toString(36).slice(2,6);
-    p.inv.push({uid,itemId:win.id,price});p.cases++;p.last=[win.id,...p.last].slice(0,10);S.live=[{pid:p.id,itemId:win.id,price,t:Date.now()},...S.live].slice(0,20);
-    if(win.r===4)found('gold');if(p.cases>=100)found('case100');if(p.last.length>=3&&p.last[0]===p.last[1]&&p.last[1]===p.last[2])found('triple');
-    opening=false;save();render();haptic(win.r>=3?'heavy':'light');
-    const show=()=>{if(win.r>=2||!fast)overlay({vis:vis(win,true),rc:r.c,title:r.n.toUpperCase(),text:`${p.name} выбил «${win.name}» за ${fmt(price)} 🪙`,
-      buttons:[{t:'Забрать'},{t:`Продать за ${fmt(price)}`,c:'',fn:()=>sellUids(p,[uid])}]})};
-    maybeClip(win.r>=3?true:.2,show);
-  },dur*1000+80)}))};
+    const got=wins.map(w=>{const r=R[w.r],price=Math.round(r.p*(.8+Math.random()*.4)),uid='i'+Date.now()+Math.random().toString(36).slice(2,7);
+      p.inv.push({uid,itemId:w.id,price});p.cases++;p.last=[w.id,...p.last].slice(0,10);S.live=[{pid:p.id,itemId:w.id,price,t:Date.now()},...S.live].slice(0,20);
+      if(w.r===4)found('gold');return{w,price,uid}});
+    if(p.cases>=100)found('case100');if(p.last.length>=3&&p.last[0]===p.last[1]&&p.last[1]===p.last[2])found('triple');
+    opening=false;save();render();const best=got.reduce((a,b)=>b.w.r>a.w.r||(b.w.r===a.w.r&&b.price>a.price)?b:a);haptic(best.w.r>=3?'heavy':'light');
+    if(n===1){const {w,price,uid}=got[0],r=R[w.r];
+      if(w.r>=2||!fast)overlay({vis:vis(w,true),rc:r.c,title:r.n.toUpperCase(),text:`${p.name} выбил «${w.name}» за ${fmt(price)} 🪙`,
+        buttons:[{t:'Забрать'},{t:`Продать за ${fmt(price)}`,c:'',fn:()=>sellUids(p,[uid])}]})}
+    else{const total=got.reduce((s,x)=>s+x.price,0),sorted=[...got].sort((a,b)=>b.w.r-a.w.r||b.price-a.price);
+      overlay({grid:sorted.map(x=>icard(x.w,{price:x.price})).join(''),rc:R[best.w.r].c,title:`ВЫПАЛО ×${n}`,
+        text:`${p.name} выбил ${n} мемов на ${fmt(total)} 🪙. Лучший: «${best.w.name}»`,
+        buttons:[{t:'Забрать всё'},{t:`Продать всё за ${fmt(total)}`,c:'',fn:()=>sellUids(p,got.map(x=>x.uid))}]})}
+  },maxEnd*1000+80)}))};
 
 /* ===== inventory ===== */
 function sellUids(p,uids){let sum=0,gold=false;p.inv=p.inv.filter(x=>{if(uids.includes(x.uid)){sum+=x.price;const it=itemById(x.itemId);if(it&&it.r===4)gold=true;SEL.delete(x.uid);return false}return true});
@@ -598,7 +624,7 @@ let buf='';document.addEventListener('keydown',e=>{if(/^(INPUT|TEXTAREA|SELECT)$
 
 /* ===== uploads & players ===== */
 function shrink(file,max){return new Promise(res=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),'image/jpeg',.88)};im.onerror=()=>{URL.revokeObjectURL(u);res(null)};im.src=u})}
-let MAN=null;const BUILTIN_MAN={"items": [{"file": "malyshochek.png", "match": "193935", "name": "Зайчик бурмалдайчик", "rarity": 4}, {"file": "tazik.png", "match": "195106", "name": "Я помылся", "rarity": 4}, {"file": "burmalda.png", "match": "195243", "name": "БУРМАЛДА", "rarity": 3}, {"file": "omg.png", "match": "195158", "name": "О май гад", "rarity": 3}, {"file": "dark-drun.png", "match": "195047", "name": "Тёмный Друн", "rarity": 3}, {"file": "lysyi.png", "match": "195445", "name": "Шо ты лысый", "rarity": 2}, {"file": "voznya.png", "match": "195338", "name": "Я уже красный", "rarity": 2}, {"file": "kachok.png", "match": "195317", "name": "МОГ", "rarity": 2}, {"file": "am-am-am.png", "match": "195409", "name": "Ам-ам-ам", "rarity": 1}, {"file": "biznes.png", "match": "195352", "name": "Что за бизнес", "rarity": 1}, {"file": "plaki.png", "match": "195300", "name": "Ам-ам-ам", "rarity": 1}, {"file": "zanos.png", "match": "195214", "name": "Танцуют все", "rarity": 1}, {"file": "normaldaki.png", "match": "195428", "name": "Нормалдаки", "rarity": 0}, {"file": "smena.png", "match": "195229", "name": "Вторая смена", "rarity": 0}, {"file": "eldzheevka.png", "match": "195134", "name": "Мелл", "rarity": 0}, {"file": "67.png", "match": "195119", "name": "Хз кто это", "rarity": 0}]};
+let MAN=null;const BUILTIN_MAN={"items": [{"file": "malyshochek.png", "match": "193935", "name": "Зайчик бурмалдайчик", "rarity": 4}, {"file": "tazik.png", "match": "195106", "name": "Я помылся", "rarity": 4}, {"file": "burmalda.png", "match": "195243", "name": "БУРМАЛДА", "rarity": 3}, {"file": "omg.png", "match": "195158", "name": "О май гад", "rarity": 3}, {"file": "dark-drun.png", "match": "195047", "name": "Тёмный Друн", "rarity": 3}, {"file": "lysyi.png", "match": "195445", "name": "Шо ты лысый", "rarity": 2}, {"file": "voznya.png", "match": "195338", "name": "Я уже красный", "rarity": 2}, {"file": "kachok.png", "match": "195317", "name": "МОГ", "rarity": 2}, {"file": "am-am-am.png", "match": "195409", "name": "Ам-ам-ам", "rarity": 1}, {"file": "biznes.png", "match": "195352", "name": "Что за бизнес", "rarity": 1}, {"file": "plaki.png", "match": "195300", "name": "Ам-ам-ам", "rarity": 1}, {"file": "zanos.png", "match": "195214", "name": "Танцуют все", "rarity": 1}, {"file": "normaldaki.png", "match": "195428", "name": "Нормалдаки", "rarity": 0}, {"file": "smena.png", "match": "195229", "name": "Вторая смена", "rarity": 0}, {"file": "eldzheevka.png", "match": "195134", "name": "Мелл", "rarity": 0}, {"file": "67.png", "match": "195119", "name": "Хз кто это", "rarity": 0}, {"file": "yt-1.jpg", "match": "yt-1.", "name": "Ютубер 1", "rarity": 1, "set": "yt"}, {"file": "yt-2.jpg", "match": "yt-2.", "name": "Ютубер 2", "rarity": 2, "set": "yt"}, {"file": "yt-3.jpg", "match": "yt-3.", "name": "Ютубер 3", "rarity": 3, "set": "yt"}, {"file": "yt-4.jpg", "match": "yt-4.", "name": "Ютубер 4", "rarity": 4, "set": "yt"}]};
 $('drop').onclick=()=>{$('packFile').value='';$('packFile').click()};
 $('packFile').onchange=async e=>{const files=[...e.target.files];let ni=PACK.filter(p=>p.kind==='img'&&!p.repo).length,nv=0,ord=Date.now();
   for(const f of files){
