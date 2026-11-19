@@ -27,9 +27,9 @@ for e in man["items"]:
     items.append(("m:" + e["file"], e["name"], int(e["rarity"]), e.get("set") or "mell"))
 
 # скины CS2 из index.html
-cs_block = re.search(r"const CSITEMS=\[(.*?)\]\.map", html, re.S).group(1)
-for i, m in enumerate(re.finditer(r"\['((?:[^'\\]|\\.)*)','(\w+)',\[[^\]]*\],(\d)\]", cs_block)):
-    items.append((f"cs{i}", m.group(1).replace("\\'", "'"), int(m.group(3)), "cs"))
+cs_list = json.loads(re.search(r"const CSITEMS=(\[\[.*?\]\])\.map", html, re.S).group(1))
+for i, (name, r) in enumerate(cs_list):
+    items.append((f"cs{i}", name, int(r), "cs"))
 
 # особые предметы
 items.append(("gold-karambit", "★ Золотой Karambit | Депость", 4, "special"))
