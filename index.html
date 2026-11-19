@@ -240,11 +240,12 @@ input[type=text],select{height:44px;background:var(--card2);border:1px solid var
   <!-- BATTLE -->
   <div class="pg" id="pg-battle">
     <h2>Деп-батл</h2>
-    <div class="hint" style="margin-top:-4px">Все закидывают мемов и монеты в общий банк. Чем больше закинул, тем выше шанс. Победитель забирает всё. Чтобы закинуть за друга, нажми на баланс сверху и добавь или выбери игрока.</div>
+    <div class="hint" style="margin-top:-4px">Все закидывают мемов и монеты в общий банк. Чем больше закинул, тем выше шанс. Победитель забирает всё. Играешь один? Добавь ботов. Чтобы закинуть за друга, нажми на баланс сверху и выбери игрока.</div>
     <div class="box">
       <div class="row" style="margin-bottom:10px">
         <button class="btn acc" id="potItems">Закинуть мемов</button>
         <button class="btn" data-c="100">+100</button><button class="btn" data-c="500">+500</button><button class="btn" data-c="all">Всё</button>
+        <button class="btn" id="addBot">🤖 + Бот</button>
       </div>
       <div class="plist" id="potList"></div>
       <div class="openrow" style="margin-bottom:0"><button class="bigbtn hot" id="potSpin">Крутить банк</button><button class="btn" id="potBack" style="height:58px">Вернуть</button></div>
@@ -326,6 +327,14 @@ const CASES=[
   {id:'gold',name:'Легендарный',price:600,w:[25,33,22,14,6],bg:['#ffd84a','#ff8a2b']},
   {id:'lux',name:'Только редкие',price:1500,w:[0,0,55,35,10],bg:['#ff3dbd','#7a2bff'],badge:'🔥 Хайроллер'},
   {id:'cs',name:'Скины CS2',price:300,w:[45,30,15,7,3],bg:['#3d8bff','#22306e'],badge:'🔫 CS2',set:'cs'},
+  {id:'mytishchi',name:'Мытищи',price:2500,w:[30,32,22,12,4],mult:6,bg:['#4be0a0','#1f6b8a']},
+  {id:'ytpro',name:'Ютуберы PRO',price:3000,w:[0,20,35,30,15],mult:3,bg:['#ff3d3d','#7a1f1f'],badge:'▶️ PRO',set:'yt'},
+  {id:'burmalda',name:'Бурмалда',price:5000,w:[20,30,28,16,6],mult:9,bg:['#ff5a2b','#7a1fbf']},
+  {id:'cselite',name:'CS2 Элитный',price:7500,w:[0,25,40,25,10],mult:9,bg:['#2bd9ff','#2b3dbf'],badge:'🔫 Элита',set:'cs'},
+  {id:'dodep',name:'Додеп',price:10000,w:[0,30,38,22,10],mult:12,bg:['#d32ce6','#3a1f8a'],badge:'🎰 Додеп'},
+  {id:'major',name:'Мажор',price:25000,w:[0,0,50,35,15],mult:20,bg:['#ffd84a','#b8860b'],badge:'💎 Мажор'},
+  {id:'millioner',name:'Миллионер',price:50000,w:[0,0,30,45,25],mult:28,bg:['#7cff9b','#0f7a4a'],badge:'💰 Миллионер'},
+  {id:'lastchance',name:'Последний шанс',price:100000,w:[0,0,0,60,40],mult:38,bg:['#ff2b55','#1a0610'],badge:'☠️ 100к'},
   {id:'yt',name:'Ютуберы',price:250,w:[40,30,18,9,3],bg:['#ff3d3d','#ff9a3d'],badge:'🆕 Новый',set:'yt'},
 ];
 const DEF=[{id:'d0',name:'Носок',e:'🧦',r:0},{id:'d1',name:'Картошка',e:'🥔',r:0},{id:'d2',name:'Тапок',e:'🩴',r:0},{id:'d3',name:'Чайник',e:'🫖',r:1},{id:'d4',name:'Жаба',e:'🐸',r:1},{id:'d5',name:'Шаурма',e:'🌯',r:2},{id:'d6',name:'Корона',e:'👑',r:3},{id:'d7',name:'Бриллиант',e:'💎',r:4}];
@@ -351,7 +360,7 @@ const CSITEMS=[
 ].map(([name,type,cols,r],i)=>({id:'cs'+i,name,r,set:'cs',kind:'img',url:gunSVG(type,cols,R[r].c)}));
 const AUTO_R=[0,1,0,2,0,1,3,0,1,2,0,4,1,0,2];
 const COLORS=['#ff7ab0','#5ee0ff','#ffcf4a','#7cff9b','#ff9a5a','#b99bff','#ff6b81','#7ab8ff'];
-const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',mama:'Мама, дай денег',spam:'Пополнятор'};
+const EGGS={rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',botwin:'Ограблен ботом',mama:'Мама, дай денег',spam:'Пополнятор'};
 const BONUS=200,BONUS_CD=5*60*1000;
 
 /* ===== state ===== */
@@ -416,7 +425,7 @@ const itemById=id=>PACK.find(p=>p.id===id)||DEF.find(d=>d.id===id)||CSITEMS.find
 const vis=(it,big)=>!it?'<span class="emo">❓</span>':it.url?`<img src="${big||!it.th?it.url:it.th}" alt="" decoding="async">`:`<span class="emo">${it.e}</span>`;
 function icard(it,{price,chance,sel,mini}={}){const r=R[it?it.r:0];
   return `<div class="icard${sel?' sel':''}${mini?' mini':''}" style="--rc:${r.c}"><div class="pic">${vis(it)}</div><div class="bar"></div><div class="meta"><div class="nm">${esc(it?it.name:'???')}</div>${price!=null?`<div class="pr">${fmt(price)}</div>`:chance!=null?`<div class="ch">${chance}</div>`:`<div class="ch" style="color:${r.c}">${r.n}</div>`}</div></div>`}
-const avaHTML=p=>p.avatar?`<img src="${p.avatar}" alt="">`:esc(p.name[0]);
+const avaHTML=p=>p.avatar?`<img src="${p.avatar}" alt="">`:p.emo?p.emo:esc(p.name[0]);
 const invValue=p=>p.inv.reduce((s,x)=>s+x.price,0);
 
 /* ===== feedback ===== */
@@ -460,12 +469,13 @@ function artHTML(c,big){
     ${c.badge?`<div class="bdg">${c.badge}</div>`:''}
     <div class="it i1">${vis(b)}</div><div class="it i2">${vis(d)}</div><div class="it i0">${vis(a)}</div></div>`}
 let filter='all';
-const FILTERS=[['all','Все'],['free','Бесплатные'],['cheap','До 500'],['rich','Дорогие']];
+const FILTERS=[['all','Все'],['free','Бесплатные'],['cheap','До 1к'],['mid','1к–10к'],['rich','10к+']];
+const fmtK=n=>n>=10000?(n%1000?(n/1000).toFixed(1):n/1000)+'к':fmt(n);
 function renderCases(){
   $('chips').innerHTML=FILTERS.map(([k,t])=>`<button class="chip${filter===k?' on':''}" data-f="${k}">${t}</button>`).join('');
   $('chips').querySelectorAll('button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;renderCases()});
-  const ok=c=>filter==='all'||(filter==='free'&&!c.price)||(filter==='cheap'&&c.price&&c.price<=500)||(filter==='rich'&&c.price>500);
-  const grp=(title,list)=>list.length?`<h2>${title}</h2><div class="cgrid">${list.map(c=>`<div class="ccard" data-c="${c.id}">${artHTML(c)}<div class="cfoot"><div class="cname">${esc(c.name)}</div>${c.price?`<div class="price">${fmt(c.price)} <div class="coin" style="width:18px;height:18px;font-size:9px">Д</div></div>`:'<div class="price free">Даром</div>'}</div></div>`).join('')}</div>`:'';
+  const ok=c=>filter==='all'||(filter==='free'&&!c.price)||(filter==='cheap'&&c.price&&c.price<1000)||(filter==='mid'&&c.price>=1000&&c.price<=10000)||(filter==='rich'&&c.price>10000);
+  const grp=(title,list)=>list.length?`<h2>${title}</h2><div class="cgrid">${list.map(c=>`<div class="ccard" data-c="${c.id}">${artHTML(c)}<div class="cfoot"><div class="cname">${esc(c.name)}</div>${c.price?`<div class="price">${fmtK(c.price)} <div class="coin" style="width:18px;height:18px;font-size:9px">Д</div></div>`:'<div class="price free">Даром</div>'}</div></div>`).join('')}</div>`:'';
   const cs=CASES.filter(c=>ok(c)&&pool(setOf(c)).length).sort((a,b)=>a.price-b.price);
   $('caseList').innerHTML=(pool()===DEF?`<div class="box" style="margin-top:14px;border-color:rgba(155,141,255,.4)"><b>Пока в кейсах стандартный хлам.</b><div class="hint" style="margin-bottom:8px">Загрузи мемы во вкладке «Ещё» или выложи их на GitHub в папку memes.</div><button class="btn acc" onclick="document.querySelector('[data-p=more]').click()">Загрузить мемы</button></div>`:'')
     +grp('Бесплатные',cs.filter(c=>!c.price))+grp('Кейсы',cs.filter(c=>c.price));
@@ -488,11 +498,13 @@ function renderInv(){const p=P();$('invVal').textContent=fmt(invValue(p));$('inv
     c.onclick=()=>{SEL.has(x.uid)?SEL.delete(x.uid):SEL.add(x.uid);haptic();renderInv()};g.appendChild(c)})}
 const entryVal=e=>e.coins+e.items.reduce((s,x)=>s+x.price,0);
 const potTotal=()=>S.pot.reduce((s,e)=>s+entryVal(e),0);
+const who=e=>e.bot||pById(e.pid);
 function renderPot(){const L=$('potList'),tot=potTotal();
   L.innerHTML=S.pot.length?'':'<div class="hint" style="margin:0">Банк пустой. Закинь что-нибудь.</div>';
-  S.pot.forEach(e=>{const p=pById(e.pid);if(!p)return;const v=entryVal(e);const d=document.createElement('div');d.className='potrow';
+  S.pot.forEach(e=>{const p=who(e);if(!p)return;const v=entryVal(e);const d=document.createElement('div');d.className='potrow';
     d.innerHTML=`<div class="ava" style="background:${p.color}">${avaHTML(p)}</div><div><b>${esc(p.name)}</b><div class="thumbs">${e.items.map(x=>{const it=itemById(x.itemId);return `<div class="t" style="--rc:${R[it?it.r:0].c}">${vis(it)}</div>`}).join('')}${e.coins?`<span style="font-weight:800;color:var(--gold);align-self:center">+${fmt(e.coins)}</span>`:''}</div></div><div class="v">${(tot?v/tot*100:0).toFixed(1)}%<small>${fmt(v)} 🪙</small></div>`;L.appendChild(d)});
-  $('potSpin').disabled=S.pot.filter(e=>entryVal(e)>0).length<2||jspinning;
+  $('potSpin').disabled=S.pot.filter(e=>entryVal(e)>0&&who(e)).length<2||jspinning;
+  $('potSpin').textContent=S.pot.length===1&&!S.pot[0].bot?'Добавь соперника или бота':'Крутить банк';
   const n=P().inv.filter(x=>SEL.has(x.uid)).length;$('potItems').textContent=n?`Закинуть ${n} мем(ов)`:'Закинуть мемов'}
 const BETS=[50,100,250,500,'ВСЁ'];
 function renderBets(){const b=$('bets');b.innerHTML='';BETS.forEach(v=>{const x=document.createElement('button');x.textContent=v;if(S.bet===v)x.className='sel';x.onclick=()=>{S.bet=v;save();renderBets()};b.appendChild(x)})}
@@ -560,7 +572,7 @@ $('openBtn').onclick=()=>{
   trs.forEach((tr,k)=>{const sw=tr.parentNode.clientWidth,off=WI*cw+half-sw/2+(Math.random()-.5)*(mini?50:90),d=dur+(mini?k*.12:0);maxEnd=Math.max(maxEnd,d);
     tr.offsetWidth;tr.style.transition=`transform ${d}s cubic-bezier(.08,.7,.12,1)`;tr.style.transform=`translateX(${-off}px)`});
   setTimeout(()=>{
-    const got=wins.map(w=>{const r=R[w.r],price=Math.round(r.p*(.8+Math.random()*.4)),uid='i'+Date.now()+Math.random().toString(36).slice(2,7);
+    const got=wins.map(w=>{const r=R[w.r],price=Math.round(r.p*(c.mult||1)*(.8+Math.random()*.4)),uid='i'+Date.now()+Math.random().toString(36).slice(2,7);
       p.inv.push({uid,itemId:w.id,price});p.cases++;p.last=[w.id,...p.last].slice(0,10);S.live=[{pid:p.id,itemId:w.id,price,t:Date.now()},...S.live].slice(0,20);
       if(w.r===4)found('gold');return{w,price,uid}});
     if(p.cases>=100)found('case100');if(p.last.length>=3&&p.last[0]===p.last[1]&&p.last[1]===p.last[2])found('triple');
@@ -589,19 +601,28 @@ $('potItems').onclick=()=>{if(jspinning)return;const p=P(),mv=p.inv.filter(x=>SE
   entry(p).items.push(...mv);p.inv=p.inv.filter(x=>!SEL.has(x.uid));mv.forEach(x=>SEL.delete(x.uid));save();render();toast(`${p.name} закинул ${mv.length} мем(ов)`)};
 document.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{if(jspinning)return;const p=P(),v=b.dataset.c==='all'?p.bal:Math.min(+b.dataset.c,p.bal);
   if(v<=0)return toast('Монет нет');p.bal-=v;entry(p).coins+=v;save();render()});
-$('potBack').onclick=()=>{if(jspinning)return;S.pot.forEach(e=>{const p=pById(e.pid);if(p){p.inv.push(...e.items);p.bal+=e.coins}});S.pot=[];save();render()};
+$('potBack').onclick=()=>{if(jspinning)return;S.pot.forEach(e=>{const p=e.bot?null:pById(e.pid);if(p){p.inv.push(...e.items);p.bal+=e.coins}});S.pot=[];save();render()};
+const BOTS=[['Бот Додепер','🤖','#7ab8ff'],['Бот Лудик','🎰','#ff9a5a'],['Бот Бурмалда','👺','#ff6b81'],['Бот Хайроллер','💸','#7cff9b'],['Бот Мелл','🐸','#b99bff'],['Бот Мажор','👑','#ffcf4a']];
+$('addBot').onclick=()=>{if(jspinning)return;const bots=S.pot.filter(e=>e.bot);if(bots.length>=5)return toast('Хватит ботов, их уже 5');
+  const used=new Set(bots.map(e=>e.bot.name)),free=BOTS.filter(b=>!used.has(b[0])),[name,emo,color]=rnd(free);
+  const mine=S.pot.filter(e=>!e.bot).reduce((s,e)=>s+entryVal(e),0),target=Math.max(150,Math.round((mine||300)*(.5+Math.random())));
+  const pl=[...pool('mell'),...pool('yt'),...CSITEMS],items=[];let sum=0;
+  while(sum<target*.8&&items.length<8){const it=rnd(pl),price=Math.round(R[it.r].p*(.8+Math.random()*.4));if(sum+price>target*1.3&&items.length)break;items.push({uid:'b'+Date.now()+Math.random().toString(36).slice(2,7),itemId:it.id,price});sum+=price}
+  S.pot.push({pid:'bot:'+name,bot:{name,emo,color,avatar:null},items,coins:Math.max(0,target-sum)});save();render();haptic();toast(`${emo} ${name} зашёл в батл`)};
 $('potSpin').onclick=()=>{
-  const es=S.pot.filter(e=>entryVal(e)>0&&pById(e.pid));if(es.length<2||jspinning)return;
+  const es=S.pot.filter(e=>entryVal(e)>0&&who(e));if(es.length<2||jspinning)return;
   const tot=potTotal();let x=Math.random()*tot,win=es[0];for(const e of es){x-=entryVal(e);if(x<=0){win=e;break}}
   const chance=entryVal(win)/tot,tiles=[];es.forEach(e=>{for(let i=0;i<Math.max(1,Math.round(entryVal(e)/tot*60));i++)tiles.push(e.pid)});
   const WI=52,seq=[];for(let i=0;i<60;i++)seq.push(i===WI?win.pid:rnd(tiles));
-  const tr=$('jtrack');tr.innerHTML=seq.map(id=>{const p=pById(id);return `<div class="tile" style="background:${p.color}">${avaHTML(p)}</div>`}).join('');
+  const byPid=pid=>who(es.find(e=>e.pid===pid));
+  const tr=$('jtrack');tr.innerHTML=seq.map(id=>{const p=byPid(id);return `<div class="tile" style="background:${p.color}">${avaHTML(p)}</div>`}).join('');
   const sw=$('jstrip').clientWidth,off=WI*98+45-sw/2+(Math.random()-.5)*60;
   tr.style.transition='none';tr.style.transform='translateX(0)';tr.offsetWidth;tr.style.transition='transform 6s cubic-bezier(.08,.7,.12,1)';tr.style.transform=`translateX(${-off}px)`;
   jspinning=true;renderPot();haptic('medium');$('jstrip').scrollIntoView({behavior:'smooth',block:'center'});
-  setTimeout(()=>{const wp=pById(win.pid);S.pot.forEach(e=>{wp.inv.push(...e.items);wp.bal+=e.coins});S.pot=[];jspinning=false;
-    if(chance<.1)found('underdog');save();render();haptic('heavy');
-    maybeClip(true,()=>overlay({vis:playerOv(wp),round:true,rc:wp.color,title:'ЗАБРАЛ БАНК',text:`${wp.name} забрал всё на ${fmt(tot)} 🪙 с шансом ${(chance*100).toFixed(1)}%`}))},6100)};
+  setTimeout(()=>{const wp=who(win);if(!win.bot)S.pot.forEach(e=>{wp.inv.push(...e.items);wp.bal+=e.coins});S.pot=[];jspinning=false;
+    if(chance<.1&&!win.bot)found('underdog');if(win.bot)found('botwin');save();render();haptic('heavy');
+    overlay(win.bot?{vis:`<div style="width:100%;height:100%;display:grid;place-items:center;background:${wp.color};font-size:120px">${wp.emo}</div>`,round:true,rc:wp.color,title:'БОТ ЗАБРАЛ БАНК',text:`${wp.name} утащил всё на ${fmt(tot)} 🪙 с шансом ${(chance*100).toFixed(1)}%. Додепай и отомсти.`}
+      :{vis:playerOv(wp),round:true,rc:wp.color,title:'ЗАБРАЛ БАНК',text:`${wp.name} забрал всё на ${fmt(tot)} 🪙 с шансом ${(chance*100).toFixed(1)}%`})},6100)};
 
 /* ===== wheel ===== */
 const SEGS=[{l:'×0',m:0},{l:'×2',m:2},{l:'×0',m:0},{l:'×1.5',m:1.5},{l:'×0',m:0},{l:'×3',m:3},{l:'×0.5',m:.5},{l:'×0',m:0},{l:'×2',m:2},{l:'×0',m:0},{l:'×10',m:10},{l:'×0',m:0}];
