@@ -4,3 +4,5 @@ bot/codes.txt
 bot/state.json
 bot/config.json
 *.tmp
+__pycache__/
+*.pyc
