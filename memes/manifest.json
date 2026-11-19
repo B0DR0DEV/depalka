@@ -124,6 +124,13 @@
       "name": "Мистер Бист",
       "rarity": 3,
       "set": "yt"
+    },
+    {
+      "file": "artemiy.jpg",
+      "match": "artemiy.",
+      "name": "Артемий",
+      "rarity": 4,
+      "set": "yt"
     }
   ]
 }
