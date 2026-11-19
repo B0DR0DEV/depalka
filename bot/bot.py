@@ -29,6 +29,7 @@ CODES_FILE = os.path.join(HERE, "codes.txt")
 DEFAULT_CONFIG = {
     "site_url": "https://b0dr0dev.github.io/depalka/",
     "channel_url": "https://t.me/depost_packs",
+    "proxy": "",
     "pay_text": "Переведи деньги Роме (номер спроси у него лично) и нажми «Я оплатил».",
     "products": {
         "unlimited": {"title": "♾️ Безлимит навсегда", "price": "30 ₽",
@@ -91,6 +92,17 @@ def get_token():
 
 # ---------- Telegram API ----------
 TOKEN = None
+
+
+def setup_proxy(cfg):
+    """Прокси для Telegram (если в России api.telegram.org недоступен).
+    Берётся из config.json ("proxy") или переменной HTTPS_PROXY. Нужен HTTP-прокси,
+    например http://127.0.0.1:10809 — его даёт VPN-клиент (xray, sing-box)."""
+    proxy = (cfg.get("proxy") or os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy") or "").strip()
+    if proxy:
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({"https": proxy, "http": proxy}))
+        urllib.request.install_opener(opener)
+        print(f"Telegram через прокси {proxy}")
 
 
 def api(method, **params):
@@ -231,9 +243,10 @@ def main():
         cfg = DEFAULT_CONFIG
         save_json(CONFIG_FILE, cfg)
     state = load_json(STATE_FILE, {})
+    setup_proxy(cfg)
     me = api("getMe")
     if not me:
-        print("Не получилось подключиться к Telegram. Проверь токен (token.txt) и интернет/VPN.")
+        print("Не получилось подключиться к Telegram. Проверь токен (token.txt) и прокси/VPN.")
         sys.exit(1)
     if not load_codes():
         print("[!] Рядом с bot.py нет codes.txt — бот не сможет выдавать коды.")
