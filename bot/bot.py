@@ -28,7 +28,7 @@ CODES_FILE = os.path.join(HERE, "codes.txt")
 
 DEFAULT_CONFIG = {
     "site_url": "https://b0dr0dev.github.io/depalka/",
-    "channel_url": "",
+    "channel_url": "https://t.me/depost_packs",
     "pay_text": "Переведи деньги Роме (номер спроси у него лично) и нажми «Я оплатил».",
     "products": {
         "unlimited": {"title": "♾️ Безлимит навсегда", "price": "30 ₽",
