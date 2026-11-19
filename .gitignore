@@ -1,0 +1,6 @@
+# секреты бота: никогда не выкладывать
+bot/token.txt
+bot/codes.txt
+bot/state.json
+bot/config.json
+*.tmp

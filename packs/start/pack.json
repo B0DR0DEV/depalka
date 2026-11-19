@@ -1,0 +1,15 @@
+{
+  "id": "start",
+  "name": "Стартовый пак",
+  "price": 300,
+  "badge": "📦 Пак",
+  "bg": ["#7565ff", "#ff4f8b"],
+  "weights": [45, 30, 15, 7, 3],
+  "items": [
+    { "file": "../../memes/normaldaki.png", "name": "Нормалдаки",  "rarity": 0 },
+    { "file": "../../memes/biznes.png",     "name": "Что за бизнес", "rarity": 1 },
+    { "file": "../../memes/lysyi.png",      "name": "Шо ты лысый", "rarity": 2 },
+    { "file": "../../memes/burmalda.png",   "name": "БУРМАЛДА",    "rarity": 3 },
+    { "file": "../../memes/tazik.png",      "name": "Я помылся",   "rarity": 4 }
+  ]
+}
