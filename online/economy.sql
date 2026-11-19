@@ -8,11 +8,16 @@
 create schema if not exists extensions;
 create extension if not exists pgcrypto with schema extensions;
 
-drop function if exists public.spin_room(text);
-drop table if exists public.room_players cascade;
-drop table if exists public.rooms cascade;
-drop table if exists public.feed cascade;
-drop table if exists public.players cascade;
+-- старые онлайн-таблицы (до Сезона 1) удаляются только один раз; файл можно запускать повторно
+do $$ begin
+  if to_regclass('public.players') is not null then
+    drop function if exists public.spin_room(text);
+    drop table if exists public.room_players cascade;
+    drop table if exists public.rooms cascade;
+    drop table if exists public.feed cascade;
+    drop table if exists public.players cascade;
+  end if;
+end $$;
 
 -- ---------- каталог ----------
 create table if not exists public.catalog_items (
@@ -152,9 +157,19 @@ create table if not exists public.quests (
   primary key (user_id, day, qid)
 );
 
+-- подписка на Telegram-канал: игра выдаёт ссылку на бота, бот проверяет подписку и подтверждает
+create table if not exists public.subs (
+  token text primary key,
+  user_id uuid not null references auth.users on delete cascade,
+  tg_id bigint unique,
+  created_at timestamptz not null default now(),
+  done_at timestamptz
+);
+create table if not exists public.bot_config (k text primary key, v text not null);
+
 -- все таблицы закрыты: только функции api_* (они работают от владельца базы)
 do $$ declare t text; begin
-  foreach t in array array['catalog_items','catalog_cases','seasons','wallets','inventory','free_log','perks','promo_codes','feed','crash_games','rooms','room_players','room_events','trades','quests'] loop
+  foreach t in array array['catalog_items','catalog_cases','seasons','wallets','inventory','free_log','perks','promo_codes','feed','crash_games','rooms','room_players','room_events','trades','quests','subs','bot_config'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
   end loop;
@@ -301,7 +316,7 @@ begin
   if p ? 'eggs' then update public.wallets set eggs = greatest(0, least(999, (p->>'eggs')::int)) where user_id = u; end if;
   if w.streak_day is null or w.streak_day < d then
     update public.wallets set streak = case when streak_day = d - 1 then streak + 1 else 1 end, streak_day = d where user_id = u returning * into w;
-    rew := 100 * least(w.streak, 7);
+    rew := 100 * least(w.streak, 7) * case when public.has_perk(u, 'subscriber') then 3 else 2 end / 2;
     update public.wallets set balance = balance + rew where user_id = u;
     daily := jsonb_build_object('streak', w.streak, 'reward', rew);
   end if;
@@ -841,6 +856,40 @@ begin
 end $$;
 
 -- ======================================================================
+-- API: плюшки за подписку на канал
+-- ======================================================================
+create or replace function public.api_sub_link(p jsonb) returns jsonb language plpgsql security definer set search_path = public, extensions as $$
+declare w public.wallets := public.w_get(); u uuid := w.user_id; t text;
+begin
+  if public.has_perk(u, 'subscriber') then return jsonb_build_object('done', true); end if;
+  select token into t from public.subs where user_id = u and done_at is null and created_at > now() - interval '1 day' order by created_at desc limit 1;
+  if t is null then
+    t := 'sub_' || encode(extensions.gen_random_bytes(9), 'hex');
+    insert into public.subs(token, user_id) values (t, u);
+  end if;
+  return jsonb_build_object('done', false, 'token', t);
+end $$;
+
+-- вызывает только бот: он знает секрет, хэш которого лежит в bot_config
+create or replace function public.bot_sub_confirm(p jsonb) returns jsonb language plpgsql security definer set search_path = public, extensions as $$
+declare s public.subs; tg bigint := (p->>'tg_id')::bigint; nm text;
+begin
+  if coalesce((select v from public.bot_config where k = 'secret_hash'), '') = ''
+     or encode(extensions.digest(coalesce(p->>'secret', ''), 'sha256'), 'hex') <> (select v from public.bot_config where k = 'secret_hash') then
+    raise exception 'bad_secret';
+  end if;
+  select * into s from public.subs where token = p->>'token' for update;
+  if s.token is null then return jsonb_build_object('status', 'bad_token'); end if;
+  if s.done_at is not null or public.has_perk(s.user_id, 'subscriber') then return jsonb_build_object('status', 'already'); end if;
+  if exists (select 1 from public.subs where tg_id = tg) then return jsonb_build_object('status', 'tg_used'); end if;
+  update public.subs set tg_id = tg, done_at = now() where token = s.token;
+  insert into public.perks(user_id, perk) values (s.user_id, 'subscriber') on conflict do nothing;
+  update public.wallets set balance = balance + 5000 where user_id = s.user_id returning name into nm;
+  perform public.give_item(s.user_id, 'sub-badge', 3000, false);
+  return jsonb_build_object('status', 'ok', 'name', nm);
+end $$;
+
+-- ======================================================================
 -- доступ: сайт может вызывать только api_*
 -- ======================================================================
 do $$ declare f record; begin
@@ -849,4 +898,5 @@ do $$ declare f record; begin
     if f.proname like 'api\_%' then execute format('grant execute on function %s to authenticated', f.sig); end if;
   end loop;
 end $$;
+grant execute on function public.bot_sub_confirm(jsonb) to anon, authenticated;
 grant usage on schema public to anon, authenticated;

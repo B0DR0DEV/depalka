@@ -33,6 +33,7 @@ for i, m in enumerate(re.finditer(r"\['((?:[^'\\]|\\.)*)','(\w+)',\[[^\]]*\],(\d
 
 # особые предметы
 items.append(("gold-karambit", "★ Золотой Karambit | Депость", 4, "special"))
+items.append(("sub-badge", "📢 Подписчик Депости", 3, "special"))
 
 # кейсы из index.html
 case_block = re.search(r"const CASES=\[(.*?)\n\];", html, re.S).group(1)

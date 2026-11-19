@@ -4,6 +4,8 @@
 // Нужно в настройках Worker'а:
 //   • Secret  BOT_TOKEN — токен из @BotFather
 //   • KV-привязка с именем DB — тут бот хранит админа, заявки и выданные коды
+//   • Secret  SUB_SECRET — секрет для плюшек за подписку (его прислал Claude, в GitHub не выкладывать)
+//   • Бот должен быть админом канала, иначе Telegram не даст ему проверить подписку
 
 // ===== НАСТРОЙКИ =====
 const CONFIG = {
@@ -12,6 +14,10 @@ const CONFIG = {
   payments_enabled: false,
   site_url: "https://b0dr0dev.github.io/depalka/",
   channel_url: "https://t.me/depost_packs",
+  channel_id: "@depost_packs",
+  // адрес игры в Supabase и публичный ключ (они и так видны в коде сайта)
+  supabase_url: "https://igsgzujaduifeuqvjpmr.supabase.co",
+  supabase_key: "sb_publishable_yfZAX37cHmnx4TB73GDqlg_1M8R-Lyo",
   pay_text: "Переведи деньги Роме (номер спроси у него лично) и нажми «Я оплатил».",
   products: {
     unlimited: { title: "♾️ Безлимит навсегда", price: "30 ₽", about: "Бесплатный кейс без лимита и с ×10." },
@@ -67,6 +73,33 @@ function menu() {
   return rows;
 }
 
+// ===== плюшки за подписку на канал =====
+const SUB_TEXT = {
+  ok: "🎉 Готово! Плюшки уже в игре: 5 000 монет, мем «📢 Подписчик Депости», кейс «Для своих» и +50% к бонусу за вход.\n\nВернись в браузер, где играешь, — там всё появится.",
+  already: "Плюшки за подписку на этот аккаунт уже получены 👍",
+  tg_used: "С этого Telegram плюшки уже забирали на другой аккаунт игры. Один Telegram — одни плюшки.",
+  bad_token: "Ссылка устарела. Открой в игре «Подпишись на канал» и нажми кнопку ещё раз.",
+};
+async function checkSub(env, chat, user, token) {
+  if (!/^sub_[0-9a-f]{8,40}$/.test(token)) return send(env, chat, SUB_TEXT.bad_token);
+  const m = await api(env, "getChatMember", { chat_id: CONFIG.channel_id, user_id: user.id });
+  if (!m.ok) return send(env, chat, "⚠️ Бот не может проверить подписку: его нужно сделать админом канала. Напиши Роме.");
+  const st = m.result.status, inside = ["creator", "administrator", "member"].includes(st) || (st === "restricted" && m.result.is_member);
+  if (!inside) return send(env, chat, "Ты пока не подписан на канал. Подпишись и нажми «Я подписался».",
+    [[{ text: "📢 Подписаться", url: CONFIG.channel_url }], [{ text: "✅ Я подписался", callback_data: "sub:" + token }]]);
+  if (!env.SUB_SECRET) return send(env, chat, "⚠️ Бот ещё не настроен (нет SUB_SECRET). Напиши Роме.");
+  let res;
+  try {
+    const r = await fetch(CONFIG.supabase_url.replace(/\/$/, "") + "/rest/v1/rpc/bot_sub_confirm", {
+      method: "POST", headers: { apikey: CONFIG.supabase_key, "Content-Type": "application/json" },
+      body: JSON.stringify({ p: { secret: env.SUB_SECRET, token, tg_id: user.id } }),
+    });
+    res = await r.json();
+    if (!r.ok) throw new Error(res && res.message);
+  } catch (e) { console.log("sub", e && e.message); return send(env, chat, "⚠️ Не получилось связаться с игрой. Попробуй чуть позже."); }
+  return send(env, chat, SUB_TEXT[res.status] || "Что-то пошло не так, попробуй ещё раз.");
+}
+
 async function onMessage(env, msg) {
   const chat = msg.chat.id, user = msg.from || {}, text = (msg.text || "").trim();
   const admin = Number(await env.DB.get("admin")) || 0;
@@ -80,6 +113,7 @@ async function onMessage(env, msg) {
     const lines = Object.entries(codes).map(([k, v]) => `${CONFIG.products[k]?.title || k}: ${v.filter((c) => !given[c]).length}`);
     return send(env, chat, "Осталось кодов:\n" + (lines.join("\n") || "коды не вставлены в worker.js"));
   }
+  if (text.startsWith("/start sub_")) return checkSub(env, chat, user, text.slice(7).trim());
   if (text.startsWith("/myid")) return send(env, chat, `Твой id: <code>${user.id}</code>`);
   return send(env, chat, "Это бот <b>Депости</b> 🎰\nТут можно купить донат для игры. Монеты, предметы и донат вывести обратно в деньги нельзя.\n\nВыбирай:", menu());
 }
@@ -90,6 +124,7 @@ async function onCallback(env, cb) {
   const admin = Number(await env.DB.get("admin")) || 0;
 
   if (data === "menu") return send(env, chat, "Выбирай:", menu());
+  if (data.startsWith("sub:")) return checkSub(env, chat, user, data.slice(4));
   if (data.startsWith("buy:")) {
     const k = data.slice(4), p = CONFIG.products[k]; if (!p) return;
     if (!CONFIG.payments_enabled) return send(env, chat, `<b>${p.title}</b> — ${p.price}\n${esc(p.about)}\n\n⏳ Оплата временно не работает. Скоро включим, следи за новостями в канале.`,

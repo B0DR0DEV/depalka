@@ -274,8 +274,9 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
   <div class="pg on" id="pg-cases">
     <div class="banner" id="bannerBattle"><div class="l">🎁</div><div class="r">💸</div><div class="c"><h3>Кейс-батл</h3><button class="btnp">Играть</button></div></div>
     <div class="tgrow"><a class="tglink" data-tg="channel" target="_blank" rel="noopener">📢 Паки в канале</a><a class="tglink" data-tg="bot" target="_blank" rel="noopener">🎟 Промокоды<span class="soon">скоро</span></a></div>
-    <div class="tglink" id="topTile" style="display:flex;width:100%;margin:-6px 0 14px;cursor:pointer">🏆 Таблица лидеров</div>
+    <div class="tglink" id="topTile" style="display:flex;align-items:center;justify-content:center;width:100%;margin:-6px 0 14px;cursor:pointer">🏆 Таблица лидеров</div>
     <div class="qtile" id="qTile" style="display:none"></div>
+    <div class="qtile" id="subTile" style="display:none"></div>
     <div class="chips" id="chips"></div>
     <div id="caseList"></div>
   </div>
@@ -450,6 +451,7 @@ const CASES=[
   {id:'millioner',name:'Миллионер',price:50000,w:[0,0,30,45,25],mult:28,bg:['#7cff9b','#0f7a4a'],badge:'💰 Миллионер'},
   {id:'secret',name:'Секретный',price:20000,w:[0,0,0,55,45],mult:8,bg:['#ffcf4a','#111'],badge:'🗝️ Донат',set:'secret',perk:'secretcase'},
   {id:'lastchance',name:'Последний шанс',price:100000,w:[0,0,0,60,40],mult:38,bg:['#ff2b55','#1a0610'],badge:'☠️ 100к'},
+  {id:'svoi',name:'Для своих',price:1000,w:[30,32,22,11,5],mult:2.7,bg:['#2aa6ff','#7a2bff'],badge:'📢 Подписчикам',set:'all',perk:'subscriber'},
   {id:'yt',name:'Ютуберы',price:250,w:[40,30,18,9,3],bg:['#ff3d3d','#ff9a3d'],badge:'🆕 Новый',set:'yt'},
 ];
 const DEF=[{id:'d0',name:'Носок',e:'🧦',r:0},{id:'d1',name:'Картошка',e:'🥔',r:0},{id:'d2',name:'Тапок',e:'🩴',r:0},{id:'d3',name:'Чайник',e:'🫖',r:1},{id:'d4',name:'Жаба',e:'🐸',r:1},{id:'d5',name:'Шаурма',e:'🌯',r:2},{id:'d6',name:'Корона',e:'👑',r:3},{id:'d7',name:'Бриллиант',e:'💎',r:4}];
@@ -475,7 +477,7 @@ const CSITEMS=[
 ].map(([name,type,cols,r],i)=>({id:'cs'+i,name,r,set:'cs',kind:'img',url:gunSVG(type,cols,R[r].c)}));
 const AUTO_R=[0,1,0,2,0,1,3,0,1,2,0,4,1,0,2];
 const COLORS=['#ff7ab0','#5ee0ff','#ffcf4a','#7cff9b','#ff9a5a','#b99bff','#ff6b81','#7ab8ff'];
-const EGGS={trade:'Честный обмен',rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',pack:'Коллекционер паков',botwin:'Ограблен ботом',cbwin:'Разнёс трёх ботов в кейс-батле',onlinewin:'Обыграл друзей онлайн',up20:'Апгрейд ×20',crash10:'Улетел за ×10',crashboom:'Взрыв на старте',contract:'Подписал контракт',donat:'Донатер',mama:'Мама, дай денег',spam:'Пополнятор'};
+const EGGS={sub:'Свой человек',trade:'Честный обмен',rolled:'Колесо укатилось',grandma:'Бабушка на проезд',shawa:'Ушёл за шаурмой',axes:'Три топора',kidney:'Кредит под почку',kidney2:'Почки кончились',flip:'Режим Австралии',dep:'Тайное слово',zanos:'ЗАНОС ×10',ostost:'Ость в квадрате',allin:'Всё на зеро',night:'Ночной крупье',gold:'Первая легенда',goldsold:'Продал легенду?!',triple:'Три одинаковых подряд',case100:'Кейсоман',underdog:'Забрал банк с шансом <10%',pack:'Коллекционер паков',botwin:'Ограблен ботом',cbwin:'Разнёс трёх ботов в кейс-батле',onlinewin:'Обыграл друзей онлайн',up20:'Апгрейд ×20',crash10:'Улетел за ×10',crashboom:'Взрыв на старте',contract:'Подписал контракт',donat:'Донатер',mama:'Мама, дай денег',spam:'Пополнятор'};
 // Telegram: поменяй тут, если ники заняты
 const TG={bot:'depost_promo_bot',channel:'depost_packs'};
 // Онлайн (Supabase): вставь Project URL и anon/publishable ключ. Пусто — онлайн выключен.
@@ -540,7 +542,7 @@ async function loadRepo(man){
   const imgs=PACK.filter(p=>p.repo&&p.kind==='img');
   for(let i=0;i<imgs.length;i+=4)await Promise.all(imgs.slice(i,i+4).map(makeThumb));
   }
-const pool=(set='mell')=>{if(set==='cs')return CSITEMS;if(set.startsWith('pk:'))return PACKITEMS.filter(i=>i.set===set);if(set==='secret')return[...pool('mell'),...pool('yt'),...CSITEMS].filter(i=>i.r>=3);const im=PACK.filter(p=>p.kind==='img'&&(p.set||'mell')===set);return im.length||set!=='mell'?im:DEF};
+const pool=(set='mell')=>{if(set==='cs')return CSITEMS;if(set==='all')return[...pool('mell'),...pool('yt'),...CSITEMS,...PACKITEMS];if(set.startsWith('pk:'))return PACKITEMS.filter(i=>i.set===set);if(set==='secret')return[...pool('mell'),...pool('yt'),...CSITEMS].filter(i=>i.r>=3);const im=PACK.filter(p=>p.kind==='img'&&(p.set||'mell')===set);return im.length||set!=='mell'?im:DEF};
 const setOf=c=>c.set||'mell';
 const vids=()=>PACK.filter(p=>p.kind==='vid');
 let PACKITEMS=[];
@@ -559,7 +561,7 @@ async function loadPacks(){let ids=[];try{const r=await fetch('packs/index.json'
   for(const id of ids)await importPack(id)}
 function openPackLink(src){const m=String(src||'').match(/packs\/([^/]+)\//),id=(m?m[1]:String(src||'')).replace(/[^a-z0-9_-]/gi,'');
   const c=allCases().find(x=>x.id==='pk-'+id);if(!c)return toast('Пак не найден');found('pack');curCase=c;resetStrip();go('case')}
-const SPECIAL=[{id:'gold-karambit',name:'★ Золотой Karambit | Депость',r:4,set:'special',kind:'img',url:gunSVG('knife',['#fff6c4','#ffcf4a','#b8860b'],'#ffcf4a')}];
+const SPECIAL=[{id:'gold-karambit',name:'★ Золотой Karambit | Депость',r:4,set:'special',kind:'img',url:gunSVG('knife',['#fff6c4','#ffcf4a','#b8860b'],'#ffcf4a')},{id:'sub-badge',name:'📢 Подписчик Депости',r:3,set:'special',e:'📢'}];
 const itemById=id=>PACK.find(p=>p.id===id)||DEF.find(d=>d.id===id)||CSITEMS.find(d=>d.id===id)||SPECIAL.find(d=>d.id===id)||PACKITEMS.find(d=>d.id===id)||CATX.find(d=>d.id===id)||(/^crown-s\d+$/.test(id)?crownItem(id):null);
 const itemOr=id=>itemById(id)||{id,name:'???',r:0,e:'❓'};
 const plural=(n,a,b,c)=>{n=Math.abs(n)%100;const k=n%10;return n>10&&n<20?c:k===1?a:k>=2&&k<=4?b:c};
@@ -645,7 +647,7 @@ function renderCases(){
   const cs=allCases().filter(c=>ok(c)&&(!c.perk||hasPerk(c.perk))&&pool(setOf(c)).length).sort((a,b)=>a.price-b.price);
   $('caseList').innerHTML=(pool()===DEF?`<div class="box" style="margin-top:14px;border-color:rgba(155,141,255,.4)"><b>Мемы не загрузились.</b><div class="hint" style="margin:0">Проверь интернет и обнови страницу.</div></div>`:'')
     +grp('Бесплатные',cs.filter(c=>!c.price))+grp('Кейсы',cs.filter(c=>c.price));
-  renderQTile();
+  renderQTile();renderSubTile();
   $('caseList').querySelectorAll('.ccard').forEach(el=>el.onclick=()=>{curCase=allCases().find(c=>c.id===el.dataset.c);resetStrip();go('case')});
 }
 function chances(c){const pl=pool(setOf(c)),present=[...new Set(pl.map(i=>i.r))].filter(r=>c.w[r]>0),tot=present.reduce((s,r)=>s+c.w[r],0);
@@ -1091,6 +1093,8 @@ function applyHello(st){SRV.me=st.me;SRV.perks=st.perks||[];SRV.quests=st.quests
     p.inv=toInv(st.inv);p.bal=Math.max(0,+st.me.bal-stagedCoins())}
   const dl=st.daily||SRV.pendDaily;SRV.pendDaily=p?null:dl;
   if(dl&&p)overlay({vis:emojiOv('🔥'),bare:true,title:`СЕРИЯ: ${dl.streak} ${plural(dl.streak,'ДЕНЬ','ДНЯ','ДНЕЙ')}`,text:`Заходишь каждый день — получаешь ${fmt(dl.reward)} 🪙. Каждый следующий день больше, до 700.`});
+  if(p&&(st.perks||[]).includes('subscriber')&&!SO.meta.subSeen){SO.meta.subSeen=1;subWait=false;closeSheet();found('sub');setTimeout(()=>SND.drop(3),300);
+    overlay({vis:emojiOv('📢'),bare:true,title:'СПАСИБО ЗА ПОДПИСКУ',text:'+5 000 🪙 на баланс, мем «📢 Подписчик Депости» в инвентаре, кейс «Для своих» открыт, а бонус за вход теперь на 50% больше.'})}
   const s=st.season;if(s&&s.last_id&&s.last_winner&&SO.meta.seenSeason!==s.last_id){SO.meta.seenSeason=s.last_id;
     overlay({vis:emojiOv('👑'),bare:true,title:`СЕЗОН ${s.last_id} ЗАКОНЧИЛСЯ`,text:`Король сезона — ${s.last_winner}. Ему досталась уникальная корона. Начался сезон ${s.id}, очки у всех с нуля.`})}
   save()}
@@ -1140,10 +1144,29 @@ function renderQTile(){const t=$('qTile');if(!ON()||!onlineReady||!SRV.quests.le
   const qs=SRV.quests,done=qs.filter(q=>q.claimed).length,ready=qs.some(q=>!q.claimed&&q.progress>=q.goal),st=(SRV.me||{}).streak||1;
   t.innerHTML=`🔥 ${st} ${plural(st,'день','дня','дней')} подряд <span style="color:var(--muted)">·</span> 📅 Задания ${done}/${qs.length}${ready?'<span class="go">Забрать!</span>':'<span class="go" style="background:var(--card2)">›</span>'}`}
 async function questSheet(){if(!onlineReady)return;sheet('<div class="hint">Загружаю…</div>');await refreshMe();const qs=SRV.quests,st=(SRV.me||{}).streak||1;
-  sheet(`<h3>📅 Задания дня</h3><div class="hint">Каждый день в полночь по Москве — три новых задания. А за каждый день подряд, что заходишь в игру, — бонус: сегодня было ${fmt(100*Math.min(7,st))} 🪙 (серия ${st} ${plural(st,'день','дня','дней')}, максимум 700 🪙 с 7-го дня).</div>
+  sheet(`<h3>📅 Задания дня</h3><div class="hint">Каждый день в полночь по Москве — три новых задания. А за каждый день подряд, что заходишь в игру, — бонус: сегодня было ${fmt(100*Math.min(7,st)*(hasPerk('subscriber')?1.5:1))} 🪙 (серия ${st} ${plural(st,'день','дня','дней')}, максимум ${hasPerk('subscriber')?'1 050':'700'} 🪙 с 7-го дня${hasPerk('subscriber')?', с бонусом подписчика':''}).</div>
     <div class="plist">${qs.map(q=>`<div class="prow"><div style="flex:1;min-width:0"><b>${QN[q.qid]||q.qid}</b><div class="qbar"><i style="width:${Math.min(100,q.progress/q.goal*100)}%"></i></div><div style="font-size:12px;color:var(--muted)">${fmt(Math.min(q.progress,q.goal))} / ${fmt(q.goal)} · награда ${fmt(q.reward)} 🪙</div></div>${q.claimed?'<span class="tag">ГОТОВО</span>':`<button class="btn${q.progress>=q.goal?' acc':''}" data-q="${q.qid}"${q.progress>=q.goal?'':' disabled'}>Забрать</button>`}</div>`).join('')}</div>`);
   $('sheet').querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await rpc('quest_claim',{qid:b.dataset.q});applySrv(r);SND.coin();haptic('medium');toast(`+${fmt(r.reward)} 🪙 за задание`);questSheet()}catch(e){toast(errText(e));b.disabled=false}})}
 $('qTile').onclick=questSheet;
+
+/* --- плюшки за подписку на Telegram-канал (подписку проверяет бот) --- */
+const SUBTXT='5 000 🪙, мем «📢 Подписчик», кейс «Для своих» и +50% к бонусу за вход';
+let subWait=false;
+function renderSubTile(){const t=$('subTile'),show=ON()&&onlineReady&&!!SO.players[0]&&!hasPerk('subscriber');t.style.display=show?'':'none';
+  if(show)t.innerHTML=`<span>📢 Подпишись на канал: ${SUBTXT}</span><span class="go">${BOT_READY?'Забрать':'скоро'}</span>`}
+async function subSheet(){if(!onlineReady)return toast('Онлайн не подключён');
+  const head=`<h3>📢 Плюшки за подписку</h3><div class="hint">Подпишись на наш Telegram-канал и получи: <b>${SUBTXT}</b>. Один раз на аккаунт.</div>`;
+  if(!BOT_READY){sheet(head+'<a class="btn acc" data-tg="channel" target="_blank" rel="noopener" style="width:100%">📢 Открыть канал</a><div class="hint">🛠 Бот, который проверяет подписку, пока в разработке. Подпишись уже сейчас — плюшки заберёшь, как только он заработает.</div>');return setTgLinks()}
+  let r;try{r=await rpc('sub_link')}catch(e){return toast(errText(e))}
+  if(r.done)return refreshMe();
+  sheet(head+`<div class="plist"><a class="btn" data-tg="channel" target="_blank" rel="noopener" style="width:100%">1. Подписаться на канал</a><a class="btn acc" id="subBot" target="_blank" rel="noopener" style="width:100%">2. Проверить подписку в боте</a></div>
+    <div class="hint">Бот проверит, что ты подписан, и сразу начислит плюшки. Потом вернись в игру.</div><button class="btn" id="subCheck" style="width:100%">Я всё сделал — проверить</button>`);
+  setTgLinks();const a=$('subBot');a.href=`https://t.me/${TG.bot}?start=${r.token}`;
+  a.onclick=e=>{subWait=true;if(tg&&tg.openTelegramLink){e.preventDefault();tg.openTelegramLink(a.href)}};
+  $('subCheck').onclick=subCheck}
+async function subCheck(){await refreshMe();if(!hasPerk('subscriber'))toast('Бот пока не подтвердил подписку. Нажми «Проверить подписку в боте»')}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&subWait)subCheck()});
+$('subTile').onclick=subSheet;
 
 /* --- таблица лидеров и сезоны --- */
 let topTab='season';

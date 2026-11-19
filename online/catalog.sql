@@ -39,6 +39,7 @@ insert into public.catalog_items(id, name, rarity, set) values
   ('cs15', 'Sport Gloves | Pandora''s Box', 4, 'cs'),
   ('cs16', 'AWP | Dragon Lore', 4, 'cs'),
   ('gold-karambit', '★ Золотой Karambit | Депость', 4, 'special'),
+  ('sub-badge', '📢 Подписчик Депости', 3, 'special'),
   ('pk:start:../../memes/normaldaki.png', 'Нормалдаки', 0, 'pk:start'),
   ('pk:start:../../memes/biznes.png', 'Что за бизнес', 1, 'pk:start'),
   ('pk:start:../../memes/lysyi.png', 'Шо ты лысый', 2, 'pk:start'),
@@ -62,6 +63,7 @@ insert into public.catalog_cases(id, name, price, weights, mult, set, perk, acti
   ('millioner', 'Миллионер', 50000, array[0, 0, 30, 45, 25], 28.0, 'mell', null, true),
   ('secret', 'Секретный', 20000, array[0, 0, 0, 55, 45], 8.0, 'secret', 'secretcase', true),
   ('lastchance', 'Последний шанс', 100000, array[0, 0, 0, 60, 40], 38.0, 'mell', null, true),
+  ('svoi', 'Для своих', 1000, array[30, 32, 22, 11, 5], 2.7, 'all', 'subscriber', true),
   ('yt', 'Ютуберы', 250, array[40, 30, 18, 9, 3], 1, 'yt', null, true),
   ('pk-start', 'Стартовый пак', 300, array[45, 30, 15, 7, 3], 1.0, 'pk:start', null, true)
 on conflict (id) do update set name = excluded.name, price = excluded.price, weights = excluded.weights, mult = excluded.mult, set = excluded.set, perk = excluded.perk, active = true;

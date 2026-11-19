@@ -29,6 +29,10 @@ CODES_FILE = os.path.join(HERE, "codes.txt")
 DEFAULT_CONFIG = {
     "site_url": "https://b0dr0dev.github.io/depalka/",
     "channel_url": "https://t.me/depost_packs",
+    "channel_id": "@depost_packs",
+    "supabase_url": "https://igsgzujaduifeuqvjpmr.supabase.co",
+    "supabase_key": "sb_publishable_yfZAX37cHmnx4TB73GDqlg_1M8R-Lyo",
+    "sub_secret": "",
     "proxy": "",
     "payments_enabled": False,
     "pay_text": "Переведи деньги Роме (номер спроси у него лично) и нажми «Я оплатил».",
@@ -146,6 +150,45 @@ def user_label(u):
     return f"{esc(name)} (@{esc(u['username'])})" if u.get("username") else esc(name)
 
 
+# ---------- плюшки за подписку на канал ----------
+SUB_TEXT = {
+    "ok": "🎉 Готово! Плюшки уже в игре: 5 000 монет, мем «📢 Подписчик Депости», кейс «Для своих» "
+          "и +50% к бонусу за вход.\n\nВернись в браузер, где играешь, — там всё появится.",
+    "already": "Плюшки за подписку на этот аккаунт уже получены 👍",
+    "tg_used": "С этого Telegram плюшки уже забирали на другой аккаунт игры. Один Telegram — одни плюшки.",
+    "bad_token": "Ссылка устарела. Открой в игре «Подпишись на канал» и нажми кнопку ещё раз.",
+}
+
+
+def check_sub(chat_id, user, token, cfg):
+    """Бот должен быть админом канала, иначе Telegram не скажет, подписан ли человек."""
+    import re
+    if not re.fullmatch(r"sub_[0-9a-f]{8,40}", token):
+        return send(chat_id, SUB_TEXT["bad_token"])
+    m = api("getChatMember", chat_id=cfg.get("channel_id") or DEFAULT_CONFIG["channel_id"], user_id=user["id"])
+    if not m:
+        return send(chat_id, "⚠️ Бот не может проверить подписку: его нужно сделать админом канала. Напиши Роме.")
+    st = m.get("status")
+    if not (st in ("creator", "administrator", "member") or (st == "restricted" and m.get("is_member"))):
+        return send(chat_id, "Ты пока не подписан на канал. Подпишись и нажми «Я подписался».",
+                    [[{"text": "📢 Подписаться", "url": cfg.get("channel_url") or DEFAULT_CONFIG["channel_url"]}],
+                     [{"text": "✅ Я подписался", "callback_data": "sub:" + token}]])
+    secret = cfg.get("sub_secret") or ""
+    if not secret:
+        return send(chat_id, "⚠️ Бот ещё не настроен (нет sub_secret в config.json). Напиши Роме.")
+    url = (cfg.get("supabase_url") or DEFAULT_CONFIG["supabase_url"]).rstrip("/") + "/rest/v1/rpc/bot_sub_confirm"
+    key = cfg.get("supabase_key") or DEFAULT_CONFIG["supabase_key"]
+    body = json.dumps({"p": {"secret": secret, "token": token, "tg_id": user["id"]}}).encode("utf-8")
+    req = urllib.request.Request(url, data=body, headers={"apikey": key, "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            res = json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        print(f"[!] Плюшки за подписку: {e!r}")
+        return send(chat_id, "⚠️ Не получилось связаться с игрой. Попробуй чуть позже.")
+    return send(chat_id, SUB_TEXT.get(res.get("status"), "Что-то пошло не так, попробуй ещё раз."))
+
+
 def handle_message(msg, cfg, state):
     chat_id = msg["chat"]["id"]
     text = (msg.get("text") or "").strip()
@@ -166,6 +209,9 @@ def handle_message(msg, cfg, state):
                  for k, v in codes.items()]
         send(chat_id, "Осталось кодов:\n" + ("\n".join(lines) or "codes.txt не найден"))
         return
+    if text.startswith("/start sub_"):
+        check_sub(chat_id, user, text[7:].strip(), cfg)
+        return
     if text.startswith("/myid"):
         send(chat_id, f"Твой id: <code>{user.get('id')}</code>")
         return
@@ -181,6 +227,9 @@ def handle_callback(cb, cfg, state):
     chat_id = cb["message"]["chat"]["id"]
     admin = state.get("admin_id")
 
+    if data.startswith("sub:"):
+        check_sub(chat_id, user, data[4:], cfg)
+        return
     if data.startswith("buy:"):
         k = data[4:]
         p = cfg["products"].get(k)

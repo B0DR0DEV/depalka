@@ -16,6 +16,8 @@
 6. **Добавь токен.** Там же: **Settings** → **Variables and Secrets** → **Add**. Type: **Secret**, Name: `BOT_TOKEN`, Value: токен бота. Сохрани и нажми **Deploy**, если попросит.
 7. **Подключи Telegram.** Открой в браузере адрес своего Worker'а с `/setup` на конце, например `https://depost-bot.твой-ник.workers.dev/setup`. Должно появиться «✅ Готово!».
 8. **Стань админом.** Напиши своему боту `/iamadmin`.
+9. **Плюшки за подписку.** В **Settings** → **Variables and Secrets** добавь ещё один **Secret**: Name `SUB_SECRET`, Value — строка из файла `sub-secret.txt`, который прислал Claude. Потом в Telegram открой канал → **Администраторы** → **Добавить** → найди своего бота и сделай его админом (права можно все выключить). Без этого Telegram не скажет боту, подписан ли человек.
+10. **Включи кнопку в игре.** В `index.html` поменяй `const BOT_READY=false;` на `true` и загрузи на GitHub.
 
 Если адрес `…workers.dev` у тебя не открывается, открой `/setup` один раз через VPN. После этого VPN больше не нужен: Telegram общается с Cloudflare напрямую.
 
