@@ -1095,6 +1095,8 @@ function applyHello(st){SRV.me=st.me;SRV.perks=st.perks||[];SRV.quests=st.quests
   if(dl&&p)overlay({vis:emojiOv('🔥'),bare:true,title:`СЕРИЯ: ${dl.streak} ${plural(dl.streak,'ДЕНЬ','ДНЯ','ДНЕЙ')}`,text:`Заходишь каждый день — получаешь ${fmt(dl.reward)} 🪙. Каждый следующий день больше, до 700.`});
   if(p&&(st.perks||[]).includes('subscriber')&&!SO.meta.subSeen){SO.meta.subSeen=1;subWait=false;closeSheet();found('sub');setTimeout(()=>SND.drop(3),300);
     overlay({vis:emojiOv('📢'),bare:true,title:'СПАСИБО ЗА ПОДПИСКУ',text:'+5 000 🪙 на баланс, мем «📢 Подписчик Депости» в инвентаре, кейс «Для своих» открыт, а бонус за вход теперь на 50% больше.'})}
+  if(p&&SO.meta.subSeen&&!(st.perks||[]).includes('subscriber')){SO.meta.subSeen=0;setTimeout(()=>SND.lose(),300);
+    overlay({vis:emojiOv('😢'),bare:true,title:'ТЫ ОТПИСАЛСЯ',text:'Плюшки за подписку забрали: монеты, мем «📢 Подписчик», кейс «Для своих» и бонус к ежедневке. Подпишись снова — и всё вернётся.'})}
   const s=st.season;if(s&&s.last_id&&s.last_winner&&SO.meta.seenSeason!==s.last_id){SO.meta.seenSeason=s.last_id;
     overlay({vis:emojiOv('👑'),bare:true,title:`СЕЗОН ${s.last_id} ЗАКОНЧИЛСЯ`,text:`Король сезона — ${s.last_winner}. Ему досталась уникальная корона. Начался сезон ${s.id}, очки у всех с нуля.`})}
   save()}

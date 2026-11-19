@@ -89,15 +89,30 @@ async function checkSub(env, chat, user, token) {
     [[{ text: "📢 Подписаться", url: CONFIG.channel_url }], [{ text: "✅ Я подписался", callback_data: "sub:" + token }]]);
   if (!env.SUB_SECRET) return send(env, chat, "⚠️ Бот ещё не настроен (нет SUB_SECRET). Напиши Роме.");
   let res;
-  try {
-    const r = await fetch(CONFIG.supabase_url.replace(/\/$/, "") + "/rest/v1/rpc/bot_sub_confirm", {
-      method: "POST", headers: { apikey: CONFIG.supabase_key, "Content-Type": "application/json" },
-      body: JSON.stringify({ p: { secret: env.SUB_SECRET, token, tg_id: user.id } }),
-    });
-    res = await r.json();
-    if (!r.ok) throw new Error(res && res.message);
-  } catch (e) { console.log("sub", e && e.message); return send(env, chat, "⚠️ Не получилось связаться с игрой. Попробуй чуть позже."); }
+  try { res = await gameRpc(env, "bot_sub_confirm", { token, tg_id: user.id }); }
+  catch (e) { console.log("sub", e && e.message); return send(env, chat, "⚠️ Не получилось связаться с игрой. Попробуй чуть позже."); }
   return send(env, chat, SUB_TEXT[res.status] || "Что-то пошло не так, попробуй ещё раз.");
+}
+async function gameRpc(env, fn, p) {
+  const r = await fetch(CONFIG.supabase_url.replace(/\/$/, "") + "/rest/v1/rpc/" + fn, {
+    method: "POST", headers: { apikey: CONFIG.supabase_key, "Content-Type": "application/json" },
+    body: JSON.stringify({ p: { secret: env.SUB_SECRET, ...p } }),
+  });
+  const res = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(res && res.message);
+  return res;
+}
+// человек вышел из канала → игра забирает плюшки за подписку
+async function onChatMember(env, upd) {
+  const chat = upd.chat || {}, want = String(CONFIG.channel_id || "").replace(/^@/, "").toLowerCase();
+  if (String(chat.username || "").toLowerCase() !== want && String(chat.id) !== String(CONFIG.channel_id)) return;
+  const nm = upd.new_chat_member || {}, user = nm.user || {};
+  const inside = ["creator", "administrator", "member"].includes(nm.status) || (nm.status === "restricted" && nm.is_member);
+  if (inside || !user.id || user.is_bot || !env.SUB_SECRET) return;
+  const res = await gameRpc(env, "bot_sub_revoke", { tg_id: user.id }).catch((e) => { console.log("revoke", e && e.message); return null; });
+  if (res && res.status === "revoked")
+    await send(env, user.id, "😢 Ты отписался от канала, поэтому плюшки за подписку забрали: монеты, мем «📢 Подписчик», кейс «Для своих» и бонус к ежедневке.\n\nПодпишись снова и нажми в игре «Подпишись на канал», чтобы всё вернуть.",
+      [[{ text: "📢 Подписаться снова", url: CONFIG.channel_url }]]);
 }
 
 async function onMessage(env, msg) {
@@ -177,7 +192,7 @@ export default {
     if (url.pathname === "/setup") {
       const r = await api(env, "setWebhook", {
         url: `${url.origin}/webhook`, secret_token: secret,
-        allowed_updates: ["message", "callback_query"], drop_pending_updates: true,
+        allowed_updates: ["message", "callback_query", "chat_member"], drop_pending_updates: true,
       });
       const me = await api(env, "getMe", {});
       return new Response(r.ok ? `✅ Готово! Бот @${me.result?.username} подключён. Напиши ему /iamadmin.` : `❌ Ошибка: ${r.description}`,
@@ -189,6 +204,7 @@ export default {
       try {
         if (update.message) await onMessage(env, update.message);
         else if (update.callback_query) await onCallback(env, update.callback_query);
+        else if (update.chat_member) await onChatMember(env, update.chat_member);
       } catch (e) { console.log("error", e && e.stack); }
       return new Response("ok");
     }

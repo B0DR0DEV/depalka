@@ -176,17 +176,46 @@ def check_sub(chat_id, user, token, cfg):
     secret = cfg.get("sub_secret") or ""
     if not secret:
         return send(chat_id, "⚠️ Бот ещё не настроен (нет sub_secret в config.json). Напиши Роме.")
-    url = (cfg.get("supabase_url") or DEFAULT_CONFIG["supabase_url"]).rstrip("/") + "/rest/v1/rpc/bot_sub_confirm"
-    key = cfg.get("supabase_key") or DEFAULT_CONFIG["supabase_key"]
-    body = json.dumps({"p": {"secret": secret, "token": token, "tg_id": user["id"]}}).encode("utf-8")
-    req = urllib.request.Request(url, data=body, headers={"apikey": key, "Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=20) as r:
-            res = json.loads(r.read().decode("utf-8"))
+        res = game_rpc(cfg, "bot_sub_confirm", {"token": token, "tg_id": user["id"]})
     except Exception as e:
         print(f"[!] Плюшки за подписку: {e!r}")
         return send(chat_id, "⚠️ Не получилось связаться с игрой. Попробуй чуть позже.")
     return send(chat_id, SUB_TEXT.get(res.get("status"), "Что-то пошло не так, попробуй ещё раз."))
+
+
+def game_rpc(cfg, fn, params):
+    url = (cfg.get("supabase_url") or DEFAULT_CONFIG["supabase_url"]).rstrip("/") + "/rest/v1/rpc/" + fn
+    key = cfg.get("supabase_key") or DEFAULT_CONFIG["supabase_key"]
+    body = json.dumps({"p": {"secret": cfg.get("sub_secret") or "", **params}}).encode("utf-8")
+    req = urllib.request.Request(url, data=body, headers={"apikey": key, "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def handle_chat_member(upd, cfg):
+    """Человек вышел из канала — игра забирает плюшки за подписку."""
+    chat = upd.get("chat", {})
+    want = str(cfg.get("channel_id") or DEFAULT_CONFIG["channel_id"]).lstrip("@").lower()
+    if str(chat.get("username") or "").lower() != want and str(chat.get("id")) != want:
+        return
+    nm = upd.get("new_chat_member", {})
+    user = nm.get("user", {})
+    st = nm.get("status")
+    if st in ("creator", "administrator", "member") or (st == "restricted" and nm.get("is_member")):
+        return
+    if not user.get("id") or user.get("is_bot") or not cfg.get("sub_secret"):
+        return
+    try:
+        res = game_rpc(cfg, "bot_sub_revoke", {"tg_id": user["id"]})
+    except Exception as e:
+        print(f"[!] Не получилось забрать плюшки: {e!r}")
+        return
+    if res.get("status") == "revoked":
+        send(user["id"], "😢 Ты отписался от канала, поэтому плюшки за подписку забрали: монеты, мем «📢 Подписчик», "
+                         "кейс «Для своих» и бонус к ежедневке.\n\nПодпишись снова и нажми в игре «Подпишись на канал», "
+                         "чтобы всё вернуть.",
+             [[{"text": "📢 Подписаться снова", "url": cfg.get("channel_url") or DEFAULT_CONFIG["channel_url"]}]])
 
 
 def handle_message(msg, cfg, state):
@@ -316,7 +345,7 @@ def main():
     while True:
         try:
             updates = api("getUpdates", offset=offset, timeout=50,
-                          allowed_updates=["message", "callback_query"]) or []
+                          allowed_updates=["message", "callback_query", "chat_member"]) or []
             for u in updates:
                 offset = u["update_id"] + 1
                 try:
@@ -324,6 +353,8 @@ def main():
                         handle_message(u["message"], cfg, state)
                     elif "callback_query" in u:
                         handle_callback(u["callback_query"], cfg, state)
+                    elif "chat_member" in u:
+                        handle_chat_member(u["chat_member"], cfg)
                 except Exception as e:  # одна кривая заявка не должна ронять бота
                     print(f"[!] Ошибка в обработке: {e!r}")
                 state["offset"] = offset

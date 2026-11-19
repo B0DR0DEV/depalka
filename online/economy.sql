@@ -166,6 +166,11 @@ create table if not exists public.subs (
   done_at timestamptz
 );
 create table if not exists public.bot_config (k text primary key, v text not null);
+-- отписался от канала → плюшки забираются; потом можно подписаться снова
+alter table public.subs add column if not exists revoked_at timestamptz;
+alter table public.subs add column if not exists badge_id bigint;
+alter table public.subs drop constraint if exists subs_tg_id_key;
+create unique index if not exists subs_tg_active on public.subs (tg_id) where tg_id is not null and revoked_at is null;
 
 -- все таблицы закрыты: только функции api_* (они работают от владельца базы)
 do $$ declare t text; begin
@@ -871,22 +876,47 @@ begin
 end $$;
 
 -- вызывает только бот: он знает секрет, хэш которого лежит в bot_config
-create or replace function public.bot_sub_confirm(p jsonb) returns jsonb language plpgsql security definer set search_path = public, extensions as $$
-declare s public.subs; tg bigint := (p->>'tg_id')::bigint; nm text;
+create or replace function public.bot_check(p jsonb) returns void language plpgsql stable security definer set search_path = public, extensions as $$
 begin
   if coalesce((select v from public.bot_config where k = 'secret_hash'), '') = ''
      or encode(extensions.digest(coalesce(p->>'secret', ''), 'sha256'), 'hex') <> (select v from public.bot_config where k = 'secret_hash') then
     raise exception 'bad_secret';
   end if;
+end $$;
+
+create or replace function public.bot_sub_confirm(p jsonb) returns jsonb language plpgsql security definer set search_path = public, extensions as $$
+declare s public.subs; tg bigint := (p->>'tg_id')::bigint; nm text; bid bigint;
+begin
+  perform public.bot_check(p);
   select * into s from public.subs where token = p->>'token' for update;
   if s.token is null then return jsonb_build_object('status', 'bad_token'); end if;
   if s.done_at is not null or public.has_perk(s.user_id, 'subscriber') then return jsonb_build_object('status', 'already'); end if;
-  if exists (select 1 from public.subs where tg_id = tg) then return jsonb_build_object('status', 'tg_used'); end if;
-  update public.subs set tg_id = tg, done_at = now() where token = s.token;
+  if exists (select 1 from public.subs where tg_id = tg and revoked_at is null) then return jsonb_build_object('status', 'tg_used'); end if;
   insert into public.perks(user_id, perk) values (s.user_id, 'subscriber') on conflict do nothing;
   update public.wallets set balance = balance + 5000 where user_id = s.user_id returning name into nm;
-  perform public.give_item(s.user_id, 'sub-badge', 3000, false);
+  bid := public.give_item(s.user_id, 'sub-badge', 3000, false);
+  update public.subs set tg_id = tg, done_at = now(), badge_id = bid where token = s.token;
   return jsonb_build_object('status', 'ok', 'name', nm);
+end $$;
+
+-- бот увидел, что человек вышел из канала: забираем всё, что дали за подписку
+create or replace function public.bot_sub_revoke(p jsonb) returns jsonb language plpgsql security definer set search_path = public, extensions as $$
+declare s public.subs; tg bigint := (p->>'tg_id')::bigint; take bigint := 5000; bal bigint; nm text; gone bigint;
+begin
+  perform public.bot_check(p);
+  select * into s from public.subs where tg_id = tg and done_at is not null and revoked_at is null for update;
+  if s.token is null then return jsonb_build_object('status', 'none'); end if;
+  update public.subs set revoked_at = now() where token = s.token;
+  delete from public.perks where user_id = s.user_id and perk = 'subscriber';
+  -- мем «Подписчик» исчезает, у кого бы он ни был; если его уже продали или сожгли — забираем его цену монетами
+  with d as (delete from public.inventory where id = coalesce(s.badge_id,
+      (select id from public.inventory where user_id = s.user_id and item_id = 'sub-badge' order by id limit 1)) and item_id = 'sub-badge' returning id)
+  select count(*) into gone from d;
+  if gone = 0 then take := take + 3000; end if;
+  select balance, name into bal, nm from public.wallets where user_id = s.user_id for update;
+  take := least(take, coalesce(bal, 0));
+  update public.wallets set balance = balance - take where user_id = s.user_id;
+  return jsonb_build_object('status', 'revoked', 'name', nm, 'taken', take);
 end $$;
 
 -- ======================================================================
@@ -899,4 +929,5 @@ do $$ declare f record; begin
   end loop;
 end $$;
 grant execute on function public.bot_sub_confirm(jsonb) to anon, authenticated;
+grant execute on function public.bot_sub_revoke(jsonb) to anon, authenticated;
 grant usage on schema public to anon, authenticated;
