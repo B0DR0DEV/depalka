@@ -176,9 +176,19 @@ alter table public.subs add column if not exists badge_id bigint;
 alter table public.subs drop constraint if exists subs_tg_id_key;
 create unique index if not exists subs_tg_active on public.subs (tg_id) where tg_id is not null and revoked_at is null;
 
+-- общий чат игроков
+create table if not exists public.chat (
+  id bigint generated always as identity primary key,
+  user_id uuid not null,
+  name text not null,
+  color text,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
 -- все таблицы закрыты: только функции api_* (они работают от владельца базы)
 do $$ declare t text; begin
-  foreach t in array array['catalog_items','catalog_cases','seasons','wallets','inventory','free_log','perks','promo_codes','feed','crash_games','rooms','room_players','room_events','trades','quests','subs','bot_config'] loop
+  foreach t in array array['catalog_items','catalog_cases','seasons','wallets','inventory','free_log','perks','promo_codes','feed','crash_games','rooms','room_players','room_events','trades','quests','subs','bot_config','chat'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
   end loop;
@@ -949,6 +959,31 @@ begin
   take := least(take, coalesce(bal, 0));
   update public.wallets set balance = balance - take where user_id = s.user_id;
   return jsonb_build_object('status', 'revoked', 'name', nm, 'taken', take);
+end $$;
+
+-- ======================================================================
+-- API: чат
+-- ======================================================================
+create or replace function public.api_chat_list(p jsonb) returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare since bigint := coalesce((p->>'since')::bigint, 0);
+begin
+  perform public.me();
+  return coalesce((select jsonb_agg(jsonb_build_object('id', id, 'user', user_id, 'name', name, 'color', color, 'text', body, 'at', created_at) order by id)
+    from (select * from public.chat where id > since order by id desc limit 60) t), '[]'::jsonb);
+end $$;
+
+create or replace function public.api_chat_send(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
+declare w public.wallets := public.w_get(); u uuid := w.user_id; t text := btrim(regexp_replace(coalesce(p->>'text', ''), '\s+', ' ', 'g'));
+begin
+  if char_length(t) < 1 then raise exception 'chat_empty'; end if;
+  if char_length(t) > 300 then t := left(t, 300); end if;
+  if exists (select 1 from public.chat where user_id = u and created_at > now() - interval '2 seconds')
+     or (select count(*) from public.chat where user_id = u and created_at > now() - interval '1 minute') >= 15 then
+    raise exception 'chat_fast';
+  end if;
+  insert into public.chat(user_id, name, color, body) values (u, w.name, w.color, t);
+  delete from public.chat where id < (select max(id) - 1000 from public.chat);
+  return public.api_chat_list(jsonb_build_object('since', coalesce((p->>'since')::bigint, 0)));
 end $$;
 
 -- ======================================================================

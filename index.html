@@ -159,6 +159,13 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
 .stat.three>div{padding:10px}.stat.three b{font-size:16px}
 .badge{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:#ff4d6d;color:#fff;font-size:11px;margin-left:6px;padding:0 5px}
 #aimGrid>div{min-width:0}
+.chatbtn{position:fixed;right:14px;bottom:104px;z-index:40;width:54px;height:54px;border-radius:50%;border:1px solid var(--line);background:linear-gradient(135deg,var(--acc),#a855f7);font-size:24px;box-shadow:0 8px 22px rgba(0,0,0,.45);cursor:pointer}
+.chatbtn span{position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;line-height:20px;border-radius:10px;background:#ff4d6d;color:#fff;font:800 11px Manrope,sans-serif;padding:0 5px}
+.chatlist{height:min(58vh,480px);overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:4px 2px;-webkit-overflow-scrolling:touch}
+.cmsg{display:flex}.cmsg.me{justify-content:flex-end}
+.cmsg .cb{max-width:82%;background:var(--card2);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:7px 10px;font-size:14px;overflow-wrap:anywhere}
+.cmsg.me .cb{background:#3b2f7a;border-radius:14px 14px 4px 14px}
+.cmsg .cb b{font-size:12px;cursor:pointer}.cmsg .cb span{font-size:10px;color:var(--muted);margin-left:6px}
 .tag{font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;background:rgba(74,222,128,.15);color:var(--green)}
 
 /* pot */
@@ -424,6 +431,7 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
   <button class="bigbtn" id="wGo" style="width:100%" disabled>Войти</button>
   <div class="hint" style="text-align:center;margin-top:14px">Монеты ненастоящие. Это казик для своих.</div>
 </div></div>
+<button class="chatbtn" id="chatBtn" style="display:none">💬<span id="chatBadge" style="display:none"></span></button>
 <div class="sheetbg" id="sheetbg"><div class="sheet" id="sheet"></div></div>
 <div class="ov" id="ov"><div class="ovst" id="ovStars"></div><div class="ovcard"><div class="ovvis" id="ovVis"></div><h2 class="ovtitle" id="ovTitle"></h2><p class="ovtext" id="ovText"></p><div class="ovbtns" id="ovBtns"></div></div></div>
 <div id="toast"></div>
@@ -625,7 +633,7 @@ $('nav').onclick=e=>{const b=e.target.closest('button');if(b&&!gameBusy())go(b.d
 $('bannerBattle').onclick=()=>{setSeg('battle','cb');go('battle')};
 
 /* ===== render ===== */
-function renderHdr(){const p=P();$('balPill').classList.toggle('sb',!ON());$('balPill').querySelector('.coin').textContent=ON()?'Д':'П';$('bal').textContent=fmt(p.bal);$('meAva').style.background=p.color;$('meAva').innerHTML=avaHTML(p);$('eggCount').textContent=Object.keys(S.found).length}
+function renderHdr(){try{renderChatBtn()}catch(e){}const p=P();$('balPill').classList.toggle('sb',!ON());$('balPill').querySelector('.coin').textContent=ON()?'Д':'П';$('bal').textContent=fmt(p.bal);$('meAva').style.background=p.color;$('meAva').innerHTML=avaHTML(p);$('eggCount').textContent=Object.keys(S.found).length}
 function renderLive(){const L=$('live');
   if(ON()&&GFEED&&GFEED.length){L.innerHTML=GFEED.map(x=>{const it=itemOr(x.item),r=R[it.r];return `<div class="lcard"><div class="th" style="background:radial-gradient(circle,${r.c}66,transparent 70%)">${vis(it)}</div><div><div class="who">${esc(x.name)}</div><div class="pr">${fmt(x.price)} 🪙</div></div></div>`}).join('');return}
   if(ON()){L.innerHTML='<div class="lempty">Тут будут дропы всех игроков</div>';return}
@@ -1101,7 +1109,7 @@ $('ctGo').onclick=async()=>{if(ctBusy)return;const p=P(),sel=ctPool().filter(x=>
 
 /* ===== ОНЛАЙН: вся экономика на сервере (Supabase) ===== */
 let onlineErr='',DB=null,onlineReady=false,GFEED=null,roomTimer=null,ROOM=null,roomAnimDone={},roomEv=0,roomEvReady=false,ROOMWATCH=null,pollT=null;
-const ERR={no_money:'Не хватает монет',free_limit:'Лимит бесплатного кейса. Подожди немного',locked_case:'Этот кейс закрыт',no_case:'Такого кейса нет',empty_case:'Кейс пустой',bad_items:'Этих мемов у тебя уже нет',bad_mult:'Такого множителя нет',bad_auto:'Такого автовывода нет',empty_stake:'Сначала поставь что-нибудь',bad_cases:'Эти кейсы нельзя взять в батл',crash_running:'Ракета ещё летит',no_game:'Игра не найдена',bad_code:'Такого промокода нет',used_code:'Этот код уже кто-то активировал',quest_not_ready:'Задание ещё не выполнено',no_room:'Комната не найдена',room_closed:'Батл в этой комнате уже прошёл',room_full:'Комната заполнена',not_in_room:'Ты не в этой комнате',only_host:'Запускает только создатель комнаты',need_players:'Нужно хотя бы 2 игрока',need_stakes:'Нужны ставки хотя бы от двух игроков',bad_kind:'Не тот тип батла',bad_emoji:'Такой реакции нет',bad_target:'Игрок не найден',aim_cheap:'Скин должен быть дороже ставки',empty_trade:'Обмен пустой',too_many:'Максимум 10 мемов',too_many_trades:'У тебя уже 10 открытых предложений',trade_closed:'Это предложение уже закрыто',not_yours:'Это не твоё предложение',no_player:'Игрок не найден',not_signed_in:'Нет входа в онлайн'};
+const ERR={no_money:'Не хватает монет',free_limit:'Лимит бесплатного кейса. Подожди немного',locked_case:'Этот кейс закрыт',no_case:'Такого кейса нет',empty_case:'Кейс пустой',bad_items:'Этих мемов у тебя уже нет',bad_mult:'Такого множителя нет',bad_auto:'Такого автовывода нет',empty_stake:'Сначала поставь что-нибудь',bad_cases:'Эти кейсы нельзя взять в батл',crash_running:'Ракета ещё летит',no_game:'Игра не найдена',bad_code:'Такого промокода нет',used_code:'Этот код уже кто-то активировал',quest_not_ready:'Задание ещё не выполнено',no_room:'Комната не найдена',room_closed:'Батл в этой комнате уже прошёл',room_full:'Комната заполнена',not_in_room:'Ты не в этой комнате',only_host:'Запускает только создатель комнаты',need_players:'Нужно хотя бы 2 игрока',need_stakes:'Нужны ставки хотя бы от двух игроков',bad_kind:'Не тот тип батла',bad_emoji:'Такой реакции нет',chat_empty:'Пустое сообщение',chat_fast:'Не спамь, подожди пару секунд',bad_target:'Игрок не найден',aim_cheap:'Скин должен быть дороже ставки',empty_trade:'Обмен пустой',too_many:'Максимум 10 мемов',too_many_trades:'У тебя уже 10 открытых предложений',trade_closed:'Это предложение уже закрыто',not_yours:'Это не твоё предложение',no_player:'Игрок не найден',not_signed_in:'Нет входа в онлайн'};
 const errText=e=>{const m=String(e&&e.message||e);return ERR[m]||(/fetch|network|load failed/i.test(m)?'Нет связи с сервером':m)};
 let SRV={perks:[],free:null,freeAt:0,quests:[],season:null,trades:0,me:null};
 let CATX=[];// предметы с сервера, которых нет в файлах игры (например, короны сезонов)
@@ -1152,10 +1160,11 @@ async function onlineInit(){
     applyHello(await DB.rpc('hello',p?{name:p.name,color:p.color,eggs:Object.keys(SL.found).length}:{}));onlineErr='';
     GFEED=await DB.rpc('feed',{}).catch(()=>null);
     if(!pollT)pollT=setInterval(pollOnline,30000);
-    render();if(ON()&&myRoom())watchRoom();
+    render();if(ON()&&myRoom())watchRoom();chatPull();
   }catch(e){console.log('online off',e);onlineErr=errText(e);onlineReady=false;DB=null;render()}}
 async function pollOnline(){if(!onlineReady||document.hidden)return;
   try{GFEED=await rpc('feed');renderLive()}catch(e){}
+  if(ON()&&!chatOpen())chatPull();
   if(!SO.players[0]||gameBusy()||CR.state==='fly')return;
   try{const before=SRV.trades,st=await rpc('hello',{lite:1,eggs:Object.keys(SL.found).length});if(gameBusy()||CR.state==='fly')return;applyHello(st);
     if(SRV.trades>before)toast('🤝 Тебе предложили обмен. Загляни в инвентарь');if(ON()&&page!=='case')render();else renderHdr()}catch(e){}}
@@ -1200,6 +1209,33 @@ async function subSheet(){if(!onlineReady)return toast('Онлайн не под
 async function subCheck(){await refreshMe();if(!hasPerk('subscriber'))toast('Бот пока не подтвердил подписку. Нажми «Проверить подписку в боте»')}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&subWait)subCheck()});
 $('subTile').onclick=subSheet;
+
+/* --- общий чат игроков --- */
+let chatMsgs=[],chatTimer=null,chatUnread=0;
+const chatOpen=()=>$('sheetbg').classList.contains('show')&&!!$('chatList');
+function renderChatBtn(){const b=$('chatBtn');b.style.display=ON()&&onlineReady&&SO.players[0]?'':'none';$('chatBadge').textContent=chatUnread>99?'99+':chatUnread||'';$('chatBadge').style.display=chatUnread?'':'none'}
+function chatLine(m){const me=DB&&m.user===DB.uid,t=new Date(m.at),hm=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');
+  return `<div class="cmsg${me?' me':''}"><div class="cb"><b data-u="${esc(m.user)}" style="color:${esc(m.color||'#b99bff')}">${esc(m.name)}</b><span>${hm}</span><div>${esc(m.text)}</div></div></div>`}
+function chatAdd(list){const L=$('chatList');const last=chatMsgs.length?chatMsgs[chatMsgs.length-1].id:0;const fresh=(list||[]).filter(m=>m.id>last);if(!fresh.length)return 0;
+  chatMsgs=chatMsgs.concat(fresh).slice(-150);const mx=fresh[fresh.length-1].id;
+  if(L){const near=L.scrollHeight-L.scrollTop-L.clientHeight<80;L.insertAdjacentHTML('beforeend',fresh.map(chatLine).join(''));if(near||fresh.some(m=>DB&&m.user===DB.uid))L.scrollTop=L.scrollHeight;SO.meta.chatSeen=mx;chatUnread=0}
+  else chatUnread+=fresh.filter(m=>m.id>(SO.meta.chatSeen||0)&&!(DB&&m.user===DB.uid)).length;
+  renderChatBtn();return fresh.length}
+async function chatPull(){if(!onlineReady)return;try{const since=chatMsgs.length?chatMsgs[chatMsgs.length-1].id:0;const n=chatAdd(await rpc('chat_list',{since}));if(n&&chatOpen())SND.pop()}catch(e){}}
+async function openChat(){if(!onlineReady)return toast('Онлайн не подключён');
+  sheet(`<h3 style="margin-bottom:8px">💬 Чат</h3><div id="chatList" class="chatlist"></div>
+    <div class="row" style="margin-top:10px;flex-wrap:nowrap"><input type="text" id="chatIn" maxlength="300" placeholder="Напиши что-нибудь…" autocomplete="off" style="flex:1;min-width:0"><button class="btn acc" id="chatSend" style="height:44px">➤</button></div>`);
+  const L=$('chatList');L.innerHTML=chatMsgs.length?chatMsgs.map(chatLine).join(''):'<div class="hint" style="text-align:center">Загружаю…</div>';
+  if(!chatMsgs.length){try{const list=await rpc('chat_list',{since:0});L.innerHTML='';chatAdd(list)}catch(e){L.innerHTML='<div class="hint">Не получилось загрузить чат</div>'}}
+  if(!chatMsgs.length)L.innerHTML='<div class="hint" style="text-align:center">Тут пока тихо. Напиши первым!</div>';
+  L.scrollTop=L.scrollHeight;if(chatMsgs.length)SO.meta.chatSeen=chatMsgs[chatMsgs.length-1].id;chatUnread=0;renderChatBtn();save();
+  L.onclick=e=>{const u=e.target.closest('[data-u]');if(u)openProfile(u.dataset.u)};
+  const send=async()=>{const i=$('chatIn'),t=i.value.trim();if(!t)return;$('chatSend').disabled=true;
+    try{const since=chatMsgs.length?chatMsgs[chatMsgs.length-1].id:0,list=await rpc('chat_send',{text:t,since});i.value='';
+      if(!chatMsgs.length)L.innerHTML='';chatAdd(list);haptic()}catch(e){toast(errText(e))}$('chatSend').disabled=false;i.focus()};
+  $('chatSend').onclick=send;$('chatIn').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();send()}};
+  clearInterval(chatTimer);chatTimer=setInterval(()=>{if(!chatOpen()){clearInterval(chatTimer);chatTimer=null;return}chatPull()},3000)}
+$('chatBtn').onclick=openChat;
 
 /* --- таблица лидеров и сезоны --- */
 let topTab='season';
