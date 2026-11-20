@@ -186,9 +186,24 @@ create table if not exists public.chat (
   created_at timestamptz not null default now()
 );
 
+-- админка: кто админ, события «админ абьюз», журнал действий
+create table if not exists public.admins (user_id uuid primary key references auth.users on delete cascade, added_at timestamptz not null default now());
+create table if not exists public.events (
+  id bigint generated always as identity primary key,
+  kind text not null,
+  power numeric not null default 1,
+  ends_at timestamptz not null,
+  note text,
+  by_name text,
+  created_at timestamptz not null default now()
+);
+create table if not exists public.admin_log (id bigint generated always as identity primary key, admin uuid, action text, details jsonb, at timestamptz not null default now());
+-- ежедневный кейс: день последнего открытия
+alter table public.wallets add column if not exists daily_case date;
+
 -- все таблицы закрыты: только функции api_* (они работают от владельца базы)
 do $$ declare t text; begin
-  foreach t in array array['catalog_items','catalog_cases','seasons','wallets','inventory','free_log','perks','promo_codes','feed','crash_games','rooms','room_players','room_events','trades','quests','subs','bot_config','chat'] loop
+  foreach t in array array['catalog_items','catalog_cases','seasons','wallets','inventory','free_log','perks','promo_codes','feed','crash_games','rooms','room_players','room_events','trades','quests','subs','bot_config','chat','admins','events','admin_log'] loop
     execute format('alter table public.%I enable row level security', t);
     execute format('revoke all on public.%I from anon, authenticated', t);
   end loop;
@@ -204,6 +219,11 @@ create or replace function public.item_price(it public.catalog_items, m numeric)
   select case when it.base_price is null then public.roll_price(it.rarity, m)
               when it.set = 'cs' then greatest(1, round(it.base_price * (0.85 + random()*0.3)))::bigint
               else it.base_price end $$;
+create or replace function public.is_admin(u uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.admins where user_id = u) $$;
+-- сила активного события (удача ×N, скидка N%); 0 — события нет
+create or replace function public.event_power(k text) returns numeric language sql stable security definer set search_path = public as $$
+  select coalesce(max(power), 0) from public.events where kind = k and ends_at > now() $$;
 create or replace function public.me() returns uuid language plpgsql stable as $$
 begin if auth.uid() is null then raise exception 'not_signed_in'; end if; return auth.uid(); end $$;
 
@@ -255,25 +275,28 @@ create or replace function public.pool_items(p_set text) returns setof public.ca
              else set = p_set end $$;
 
 create or replace function public.pick_item(p_set text, p_w int[]) returns public.catalog_items language plpgsql volatile security definer set search_path = public as $$
-declare rs smallint[]; tot numeric := 0; x numeric; r smallint; chosen smallint; it public.catalog_items;
+declare rs smallint[]; tot numeric := 0; x numeric; r smallint; chosen smallint; it public.catalog_items; lk numeric := greatest(1, public.event_power('luck'));
 begin
   select array_agg(distinct i.rarity order by i.rarity) into rs from public.pool_items(p_set) i where coalesce(p_w[i.rarity + 1], 0) > 0;
   if rs is null then raise exception 'empty_case'; end if;
-  foreach r in array rs loop tot := tot + p_w[r + 1]; end loop;
+  -- во время «удачи» тайное и легенды выпадают в lk раз чаще
+  foreach r in array rs loop tot := tot + p_w[r + 1] * case when r >= 3 then lk else 1 end; end loop;
   x := random() * tot;
-  foreach r in array rs loop chosen := r; x := x - p_w[r + 1]; exit when x <= 0; end loop;
+  foreach r in array rs loop chosen := r; x := x - p_w[r + 1] * case when r >= 3 then lk else 1 end; exit when x <= 0; end loop;
   select * into it from public.pool_items(p_set) i where i.rarity = chosen order by random() limit 1;
   return it;
 end $$;
 
 create or replace function public.pick_case(c public.catalog_cases) returns public.catalog_items language plpgsql volatile security definer set search_path = public as $$
-declare tot numeric; x numeric; d jsonb; it public.catalog_items;
+declare tot numeric; x numeric; d jsonb; it public.catalog_items; lk numeric := greatest(1, public.event_power('luck')); raw numeric;
 begin
   if c.drops is null then return public.pick_item(c.set, c.weights); end if;
-  select sum((e->>1)::numeric) into tot from jsonb_array_elements(c.drops) e;
+  select sum((e->>1)::numeric) into raw from jsonb_array_elements(c.drops) e;
+  -- во время «удачи» самые редкие предметы (меньше 5% шанса) выпадают в lk раз чаще
+  select sum((e->>1)::numeric * case when (e->>1)::numeric < raw * 0.05 then lk else 1 end) into tot from jsonb_array_elements(c.drops) e;
   x := random() * tot;
   for d in select * from jsonb_array_elements(c.drops) loop
-    x := x - (d->>1)::numeric;
+    x := x - (d->>1)::numeric * case when (d->>1)::numeric < raw * 0.05 then lk else 1 end;
     if x <= 0 then select * into it from public.catalog_items where id = d->>0; return it; end if;
   end loop;
   select * into it from public.catalog_items where id = c.drops->0->>0; return it;
@@ -370,6 +393,10 @@ begin
     'free', public.free_info(u),
     'daily', daily,
     'trades', (select count(*) from public.trades where to_user = u and status = 'open'),
+    'admin', public.is_admin(u),
+    'daily_ok', w.daily_case is distinct from d,
+    'events', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'kind', kind, 'power', power, 'ends_at', ends_at, 'note', note, 'by', by_name) order by id)
+       from public.events where ends_at > now() or created_at > now() - interval '10 minutes'), '[]'::jsonb),
     'catalog', case when p ? 'lite' then null else jsonb_build_object(
       'items', (select jsonb_agg(jsonb_build_object('id', id, 'name', name, 'r', rarity, 'set', set, 'img', img)) from public.catalog_items),
       'cases', (select jsonb_agg(jsonb_build_object('id', id, 'name', name, 'price', price, 'w', weights, 'mult', mult, 'set', set, 'perk', perk)) from public.catalog_cases where active)) end);
@@ -416,17 +443,23 @@ end $$;
 -- ======================================================================
 create or replace function public.api_open_case(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
 declare w public.wallets := public.w_get(); u uuid := w.user_id; c public.catalog_cases; n int; cost bigint; it public.catalog_items; pr bigint; nid bigint; drops jsonb := '[]'::jsonb; total bigint := 0; fi jsonb;
+  sale numeric := least(90, public.event_power('sale'));
 begin
   select * into c from public.catalog_cases where id = p->>'case' and active;
   if c.id is null then raise exception 'no_case'; end if;
   if c.perk is not null and not public.has_perk(u, c.perk) then raise exception 'locked_case'; end if;
   n := greatest(1, least(10, coalesce((p->>'n')::int, 1)));
-  if c.price = 0 and not public.has_perk(u, 'unlimited') then
+  if c.id = 'daily' then
+    -- ежедневный кейс: один раз в сутки (по Москве)
+    n := 1;
+    if w.daily_case is not distinct from public.msk_today() then raise exception 'daily_used'; end if;
+    update public.wallets set daily_case = public.msk_today() where user_id = u;
+  elsif c.price = 0 and not public.has_perk(u, 'unlimited') then
     n := 1;
     if (select count(*) from public.free_log where user_id = u and at > now() - interval '10 minutes') >= 100 then raise exception 'free_limit'; end if;
     insert into public.free_log(user_id) values (u);
   end if;
-  cost := c.price * n;
+  cost := round(c.price * (100 - sale) / 100) * n;
   if w.balance < cost then raise exception 'no_money'; end if;
   update public.wallets set balance = balance - cost, cases = cases + n where user_id = u;
   for i in 1..n loop
@@ -466,6 +499,12 @@ create or replace function public.api_redeem(p jsonb) returns jsonb language plp
 declare w public.wallets := public.w_get(); u uuid := w.user_id; h text; pc public.promo_codes; nid bigint := null;
 begin
   h := encode(extensions.digest('depost:' || upper(regexp_replace(coalesce(p->>'code', ''), '\s', '', 'g')), 'sha256'), 'hex');
+  -- админский код: делает этот аккаунт админом (код можно вводить на нескольких телефонах)
+  if h = (select v from public.bot_config where k = 'admin_hash') then
+    insert into public.admins(user_id) values (u) on conflict do nothing;
+    insert into public.admin_log(admin, action) values (u, 'claim');
+    return jsonb_build_object('perk', 'admin', 'bal', w.balance);
+  end if;
   select * into pc from public.promo_codes where hash = h for update;
   if pc.hash is null then raise exception 'bad_code'; end if;
   if pc.used_by is not null then raise exception 'used_code'; end if;
@@ -984,6 +1023,85 @@ begin
   insert into public.chat(user_id, name, color, body) values (u, w.name, w.color, t);
   delete from public.chat where id < (select max(id) - 1000 from public.chat);
   return public.api_chat_list(jsonb_build_object('since', coalesce((p->>'since')::bigint, 0)));
+end $$;
+
+-- ======================================================================
+-- API: админка (только для аккаунтов из таблицы admins)
+-- ======================================================================
+create or replace function public.admin_me() returns uuid language plpgsql stable security definer set search_path = public as $$
+declare u uuid := public.me();
+begin
+  if not public.is_admin(u) then raise exception 'not_admin'; end if;
+  return u;
+end $$;
+
+create or replace function public.api_admin_players(p jsonb) returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  perform public.admin_me();
+  return coalesce((select jsonb_agg(jsonb_build_object('id', w.user_id, 'name', w.name, 'color', w.color, 'bal', w.balance, 'cases', w.cases, 'admin', public.is_admin(w.user_id),
+      'wealth', w.balance + coalesce((select sum(price) from public.inventory i where i.user_id = w.user_id), 0)) order by w.balance desc) from public.wallets w), '[]'::jsonb);
+end $$;
+
+create or replace function public.api_admin_money(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
+declare a uuid := public.admin_me(); t uuid := (p->>'user')::uuid; d bigint := coalesce((p->>'delta')::bigint, 0); nb bigint;
+begin
+  if d = 0 or abs(d) > 1000000000000 then raise exception 'bad_amount'; end if;
+  update public.wallets set balance = greatest(0, balance + d) where user_id = t returning balance into nb;
+  if nb is null then raise exception 'no_player'; end if;
+  insert into public.admin_log(admin, action, details) values (a, 'money', jsonb_build_object('user', t, 'delta', d));
+  return jsonb_build_object('bal', nb);
+end $$;
+
+create or replace function public.api_admin_give(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
+declare a uuid := public.admin_me(); t uuid := (p->>'user')::uuid; it public.catalog_items; pr bigint; nid bigint;
+begin
+  select * into it from public.catalog_items where id = p->>'item';
+  if it.id is null then raise exception 'no_item'; end if;
+  if not exists (select 1 from public.wallets where user_id = t) then raise exception 'no_player'; end if;
+  pr := coalesce(it.base_price, public.base_price(it.rarity) * 10);
+  nid := public.give_item(t, it.id, pr, false);
+  insert into public.admin_log(admin, action, details) values (a, 'give', jsonb_build_object('user', t, 'item', it.id));
+  return jsonb_build_object('id', nid, 'price', pr);
+end $$;
+
+-- «админ абьюз» для всех: rain — монеты всем, drop — всем по предмету из кейса, luck — удача ×N на M минут, sale — скидка N% на кейсы, stop — выключить события
+create or replace function public.api_admin_abuse(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
+declare a uuid := public.admin_me(); k text := p->>'kind'; pw numeric := coalesce((p->>'power')::numeric, 0); mins int := greatest(1, least(240, coalesce((p->>'minutes')::int, 10)));
+  an text := coalesce((select name from public.wallets where user_id = a), 'Админ'); c public.catalog_cases; w record; it public.catalog_items; n int := 0; msg text;
+begin
+  if k = 'rain' then
+    if pw < 1 or pw > 100000000 then raise exception 'bad_amount'; end if;
+    update public.wallets set balance = balance + pw::bigint;
+    get diagnostics n = row_count;
+    msg := '💸 ДЕНЕЖНЫЙ ДОЖДЬ! Всем +' || replace(to_char(pw::bigint, 'FM999,999,999,999'), ',', ' ') || ' монет';
+    insert into public.events(kind, power, ends_at, note, by_name) values ('rain', pw, now() + interval '1 minute', msg, an);
+  elsif k = 'drop' then
+    select * into c from public.catalog_cases where id = p->>'case' and active;
+    if c.id is null then raise exception 'no_case'; end if;
+    for w in select user_id from public.wallets loop
+      it := public.pick_case(c);
+      perform public.give_item(w.user_id, it.id, public.item_price(it, c.mult), true);
+      n := n + 1;
+    end loop;
+    msg := '🎁 РАЗДАЧА! Всем по предмету из кейса «' || c.name || '»';
+    insert into public.events(kind, power, ends_at, note, by_name) values ('drop', 1, now() + interval '1 minute', msg, an);
+  elsif k = 'luck' then
+    if pw < 2 or pw > 50 then raise exception 'bad_amount'; end if;
+    msg := '🍀 УДАЧА ×' || pw || ' на ' || mins || ' мин: тайное и легенды выпадают в ' || pw || ' раз чаще';
+    insert into public.events(kind, power, ends_at, note, by_name) values ('luck', pw, now() + make_interval(mins => mins), msg, an);
+  elsif k = 'sale' then
+    if pw < 5 or pw > 90 then raise exception 'bad_amount'; end if;
+    msg := '🔥 СКИДКА ' || pw || '% на все кейсы на ' || mins || ' мин';
+    insert into public.events(kind, power, ends_at, note, by_name) values ('sale', pw, now() + make_interval(mins => mins), msg, an);
+  elsif k = 'stop' then
+    update public.events set ends_at = now() where ends_at > now();
+    msg := '⏹ Админ выключил все события';
+  else
+    raise exception 'bad_kind';
+  end if;
+  insert into public.chat(user_id, name, color, body) values (a, '⚡ АДМИН ' || an, '#ffcf4a', msg);
+  insert into public.admin_log(admin, action, details) values (a, 'abuse', p);
+  return jsonb_build_object('ok', true, 'players', n, 'msg', msg);
 end $$;
 
 -- ======================================================================
