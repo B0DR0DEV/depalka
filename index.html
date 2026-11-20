@@ -32,7 +32,7 @@ button{font-family:inherit;color:inherit}
 .live{display:flex;gap:8px;margin:2px 0 16px;align-items:stretch}
 .livebadge{flex:none;width:30px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:800 10px Manrope;color:var(--muted);writing-mode:vertical-rl;transform:rotate(180deg);padding:8px 0}
 .livebadge::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
-.lscroll{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex:1}
+.lscroll{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;flex:1}
 .lscroll::-webkit-scrollbar,.chips::-webkit-scrollbar{display:none}
 .lcard{flex:none;display:flex;align-items:center;gap:8px;padding:8px 12px 8px 8px;border-radius:18px;background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);animation:pop .35s}
 @keyframes pop{from{transform:scale(.85);opacity:0}}
@@ -158,7 +158,8 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
 @keyframes flyup{0%{transform:translateY(0) scale(.6);opacity:0}12%{transform:translateY(-30px) scale(1.15);opacity:1}100%{transform:translateY(-55vh) scale(1);opacity:0}}
 .stat.three>div{padding:10px}.stat.three b{font-size:16px}
 .badge{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:#ff4d6d;color:#fff;font-size:11px;margin-left:6px;padding:0 5px}
-#aimGrid>div{min-width:0}
+#aimGrid>div,#tkGrid>div,#adItems>div{min-width:0}
+#aimGrid,#tkGrid,#adItems{grid-template-columns:repeat(3,minmax(0,1fr))}
 .evbar{position:fixed;left:50%;transform:translateX(-50%);top:62px;z-index:45;max-width:calc(100% - 20px);padding:8px 14px;border-radius:14px;background:linear-gradient(90deg,#ff4d6d,#a855f7);color:#fff;font:800 13px Manrope,sans-serif;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.45);animation:evp 1.6s ease-in-out infinite}
 @keyframes evp{50%{filter:brightness(1.25)}}
 .chatbtn{position:fixed;right:14px;bottom:104px;z-index:40;width:54px;height:54px;border-radius:50%;border:1px solid var(--line);background:linear-gradient(135deg,var(--acc),#a855f7);font-size:24px;box-shadow:0 8px 22px rgba(0,0,0,.45);cursor:pointer}
@@ -168,6 +169,8 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
 .cmsg .cb{max-width:82%;background:var(--card2);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:7px 10px;font-size:14px;overflow-wrap:anywhere}
 .cmsg.me .cb{background:#3b2f7a;border-radius:14px 14px 4px 14px}
 .cmsg .cb b{font-size:12px;cursor:pointer}.cmsg .cb span{font-size:10px;color:var(--muted);margin-left:6px}
+html,body{overflow-x:hidden;max-width:100%}
+#ov,.sheet{overflow-x:hidden}
 .tag{font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px;background:rgba(74,222,128,.15);color:var(--green)}
 
 /* pot */
@@ -1255,6 +1258,7 @@ function adminPlayer(x){const back='<button class="btn" id="adBack" style="width
   sheet(`<h3>${esc(x.name)}</h3><div class="hint" style="margin-top:-4px">Баланс: <b style="color:var(--text)" id="adBal">${fmt(+x.bal)}</b> 🪙</div>
     <div class="uplbl">💰 Монеты</div><div class="chips" style="flex-wrap:wrap">${[1000,10000,100000,1000000].map(v=>`<button class="chip" data-d="${v}">+${fmtK(v)}</button>`).join('')}${[1000,10000,100000].map(v=>`<button class="chip" data-d="-${v}">−${fmtK(v)}</button>`).join('')}<button class="chip" data-d="zero">Обнулить</button></div>
     <div class="row" style="margin-top:8px;flex-wrap:nowrap"><input type="number" id="adAmt" inputmode="numeric" placeholder="Своя сумма, например −5000" style="flex:1;min-width:0"><button class="btn acc" id="adGo">OK</button></div>
+    <button class="btn" id="adTake" style="width:100%;margin-top:14px">🗑 Забрать предметы у ${x.id===DB.uid?'себя':esc(x.name)}</button>
     <div class="uplbl" style="margin-top:14px">🎁 Выдать предмет</div><input type="text" id="adQ" placeholder="Поиск: Dragon Lore, Бриллиант, Мелл…" style="width:100%;box-sizing:border-box"><div class="igrid" id="adItems" style="margin-top:8px"></div>${back}`);
   const money=async d=>{if(!d)return;try{const r=await rpc('admin_money',{user:x.id,delta:d});x.bal=r.bal;$('adBal').textContent=fmt(+r.bal);SND.coin();toast((d>0?'+':'')+fmt(d)+' 🪙 → '+x.name);if(x.id===DB.uid)refreshMe()}catch(e){toast(errText(e))}};
   $('sheet').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>money(b.dataset.d==='zero'?-x.bal:+b.dataset.d));
@@ -1263,7 +1267,23 @@ function adminPlayer(x){const back='<button class="btn" id="adBack" style="width
   const draw=q=>{q=(q||'').trim().toLowerCase();const f=all.filter(i=>!q||i.name.toLowerCase().includes(q)).sort((a,b)=>(b.bp||0)-(a.bp||0)||b.r-a.r).slice(0,45);
     $('adItems').innerHTML=f.map(i=>`<div data-gi="${i.id}" style="min-width:0">${icard(i,i.bp?{price:i.bp}:{})}</div>`).join('');
     $('adItems').querySelectorAll('[data-gi]').forEach(el=>el.onclick=async()=>{try{const r=await rpc('admin_give',{user:x.id,item:el.dataset.gi});SND.drop(3);toast('Выдано: '+itemOr(el.dataset.gi).name+' → '+x.name);if(x.id===DB.uid)refreshMe()}catch(e){toast(errText(e))}})};
-  $('adQ').oninput=e=>draw(e.target.value);draw('');$('adBack').onclick=adminSheet}
+  $('adQ').oninput=e=>draw(e.target.value);draw('');$('adBack').onclick=adminSheet;$('adTake').onclick=()=>adminTake(x)}
+// забрать предметы: выбрать карточки → удалить или забрать себе
+async function adminTake(x){sheet('<div class="hint">Загружаю инвентарь…</div>');
+  let inv;try{inv=await rpc('admin_inv',{user:x.id})}catch(e){return sheet(`<div class="hint">${esc(errText(e))}</div>`)}
+  const sel=new Set(),me=x.id===DB.uid,sumSel=()=>inv.filter(i=>sel.has(i.id)).reduce((s,i)=>s+ +i.price,0);
+  const draw=()=>{sheet(`<h3>🗑 ${me?'Мои предметы':'Предметы: '+esc(x.name)}</h3><div class="hint" style="margin-top:-4px">${inv.length} шт. на ${fmt(inv.reduce((s,i)=>s+ +i.price,0))} 🪙. Нажимай на карточки, чтобы выбрать.</div>
+      <div class="row" style="flex-wrap:nowrap"><button class="btn" id="tkAll" style="flex:1">${sel.size===inv.length&&inv.length?'Снять выбор':'Выбрать всё'}</button></div>
+      <div class="igrid" id="tkGrid" style="margin-top:10px">${inv.map(i=>`<div data-t="${i.id}" style="min-width:0;position:relative;${sel.has(i.id)?'outline:3px solid #ff4d6d;border-radius:16px':''}">${icard(itemOr(i.item),{price:+i.price})}${i.locked?'<div style="position:absolute;top:6px;left:6px;font-size:16px">🔒</div>':''}${sel.has(i.id)?'<div style="position:absolute;top:4px;right:6px;font-size:20px">✅</div>':''}</div>`).join('')||'<div class="hint">Пусто</div>'}</div>
+      <div class="hint">Выбрано: ${sel.size} шт. на ${fmt(sumSel())} 🪙</div>
+      <div class="row" style="flex-wrap:nowrap"><button class="btn" id="tkDel" style="flex:1;background:#ff4d6d;color:#fff"${sel.size?'':' disabled'}>🗑 Удалить</button>${me?'':`<button class="btn acc" id="tkMe" style="flex:1"${sel.size?'':' disabled'}>📥 Забрать себе</button>`}</div>
+      <button class="btn" id="adBack" style="width:100%;margin-top:10px">← Назад</button>`);
+    $('tkGrid').querySelectorAll('[data-t]').forEach(el=>el.onclick=()=>{const id=+el.dataset.t;sel.has(id)?sel.delete(id):sel.add(id);draw()});
+    $('tkAll').onclick=()=>{if(sel.size===inv.length)sel.clear();else inv.forEach(i=>sel.add(i.id));draw()};
+    const go=async mode=>{try{const r=await rpc('admin_take',{user:x.id,ids:[...sel],mode});SND.coin();toast(`${mode==='me'?'Забрал себе':'Удалено'}: ${r.taken} шт. на ${fmt(+r.sum)} 🪙`);
+        if(me||mode==='me')await refreshMe();inv=inv.filter(i=>!sel.has(i.id));sel.clear();draw()}catch(e){toast(errText(e))}};
+    $('tkDel').onclick=()=>go('delete');if($('tkMe'))$('tkMe').onclick=()=>go('me');$('adBack').onclick=()=>adminPlayer(x)};
+  draw()}
 function abuseSheet(k){const [_,t,d]=ABUSE.find(a=>a[0]===k),back='<button class="btn" id="adBack" style="width:100%;margin-top:12px">← Назад</button>';
   const go=async body=>{try{const r=await rpc('admin_abuse',{kind:k,...body});SND.win();toast(r.msg);await refreshMe();adminSheet()}catch(e){toast(errText(e))}};
   if(k==='stop'){go({});return}

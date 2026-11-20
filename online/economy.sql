@@ -1064,6 +1064,34 @@ begin
   return jsonb_build_object('id', nid, 'price', pr);
 end $$;
 
+-- весь инвентарь игрока (вместе с замороженными в комнатах)
+create or replace function public.api_admin_inv(p jsonb) returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  perform public.admin_me();
+  return coalesce((select jsonb_agg(jsonb_build_object('id', id, 'item', item_id, 'price', price, 'locked', locked) order by price desc)
+    from public.inventory where user_id = (p->>'user')::uuid), '[]'::jsonb);
+end $$;
+
+-- забрать предметы у игрока: mode = 'delete' (удалить) или 'me' (забрать себе)
+create or replace function public.api_admin_take(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
+declare a uuid := public.admin_me(); t uuid := (p->>'user')::uuid; md text := coalesce(p->>'mode', 'delete'); ids bigint[]; r record; n int := 0; s bigint := 0;
+begin
+  if md not in ('delete', 'me') then raise exception 'bad_kind'; end if;
+  if p->>'all' = 'true' then select array_agg(id) into ids from public.inventory where user_id = t;
+  else select array_agg(x::bigint) into ids from jsonb_array_elements_text(coalesce(p->'ids', '[]'::jsonb)) x; end if;
+  for r in select id, price, locked from public.inventory where user_id = t and id = any (coalesce(ids, '{}')) for update loop
+    -- предмет стоял ставкой в комнате: уменьшаем ставку игрока
+    if r.locked like 'room:%' then
+      update public.room_players set value = greatest(0, value - r.price) where room = substr(r.locked, 6) and user_id = t;
+    end if;
+    if md = 'me' and t <> a then update public.inventory set user_id = a, locked = null where id = r.id;
+    else delete from public.inventory where id = r.id; end if;
+    n := n + 1; s := s + r.price;
+  end loop;
+  insert into public.admin_log(admin, action, details) values (a, 'take', jsonb_build_object('user', t, 'mode', md, 'count', n, 'sum', s));
+  return jsonb_build_object('taken', n, 'sum', s);
+end $$;
+
 -- «админ абьюз» для всех: rain — монеты всем, drop — всем по предмету из кейса, luck — удача ×N на M минут, sale — скидка N% на кейсы, stop — выключить события
 create or replace function public.api_admin_abuse(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
 declare a uuid := public.admin_me(); k text := p->>'kind'; pw numeric := coalesce((p->>'power')::numeric, 0); mins int := greatest(1, least(240, coalesce((p->>'minutes')::int, 10)));
