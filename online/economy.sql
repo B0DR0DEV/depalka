@@ -995,6 +995,9 @@ do $$ declare f record; begin
     if f.proname like 'api\_%' then execute format('grant execute on function %s to authenticated', f.sig); end if;
   end loop;
 end $$;
-grant execute on function public.bot_sub_confirm(jsonb) to anon, authenticated;
-grant execute on function public.bot_sub_revoke(jsonb) to anon, authenticated;
+do $$ begin
+  -- бот вызывает эти функции без входа (если они есть в базе)
+  if to_regprocedure('public.bot_sub_confirm(jsonb)') is not null then grant execute on function public.bot_sub_confirm(jsonb) to anon, authenticated; end if;
+  if to_regprocedure('public.bot_sub_revoke(jsonb)') is not null then grant execute on function public.bot_sub_revoke(jsonb) to anon, authenticated; end if;
+end $$;
 grant usage on schema public to anon, authenticated;
