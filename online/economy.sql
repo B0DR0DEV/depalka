@@ -497,14 +497,13 @@ begin
     ch := least(0.95, 0.95 * s / tp);
     m := round(tp::numeric / greatest(s, 1), 2);
   else
+    -- множитель: скин CS2 примерно в m раз дороже ставки, по его рыночной цене
     if m is null or m not in (1.5, 2, 3, 5, 10, 20) then raise exception 'bad_mult'; end if;
-    ch := least(0.95, 0.95 / m);
-    wantr := least(4, maxr + case when m >= 5 then 2 when m >= 2 then 1 else 0 end);
-    -- по множителю выпадают только мемы: у скинов своя цена, в них целятся отдельно
-    if p ? 'target' then select * into t from public.pool_items('all') where id = p->>'target' and rarity = wantr and base_price is null; end if;
-    if t.id is null then select * into t from public.pool_items('all') where rarity = wantr and base_price is null order by random() limit 1; end if;
-    if t.id is null then select * into t from public.pool_items('all') where base_price is null order by random() limit 1; end if;
-    tp := round(s * m);
+    select * into t from public.catalog_items where set = 'cs' and base_price > s * 1.05 and base_price between s * m * 0.85 and s * m * 1.15 order by random() limit 1;
+    if t.id is null then select * into t from public.catalog_items where set = 'cs' and base_price > s * 1.05 order by abs(base_price - s * m) limit 1; end if;
+    if t.id is null then raise exception 'aim_cheap'; end if;
+    tp := t.base_price;
+    ch := least(0.95, 0.95 * s / tp);
   end if;
   delete from public.inventory where user_id = u and id = any (ids);
   win := random() < ch;

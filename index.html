@@ -338,7 +338,7 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
   <div class="pg" id="pg-wheel">
     <div class="seg" data-seg="games"><button data-v="up">⬆️ Апгрейд</button><button data-v="crash">🚀 Краш</button><button data-v="ct">📜 Контракт</button><button data-v="wheel">🎡 Рулетка</button></div>
     <div class="sub" data-sub="games:up">
-      <div class="hint" style="margin-top:0">Ставишь свои мемы и выбираешь, во сколько раз дороже хочешь получить, или целишься в конкретный скин CS2. Чем дороже цель, тем меньше шанс. Не повезло — мемы сгорают.</div>
+      <div class="hint" style="margin-top:0">Ставишь свои мемы или скины и выбираешь, во сколько раз дороже скин CS2 хочешь получить, или целишься в конкретный. Чем дороже цель, тем меньше шанс. Не повезло — ставка сгорает.</div>
       <div class="upwrap">
         <div class="upgauge" id="upGauge"><div class="upring" id="upRing"></div><div class="upneedle" id="upNeedle"></div><div class="upcenter"><b id="upPct">0%</b><span>шанс</span></div></div>
         <div class="upcards"><div><div class="uplbl">Ставка</div><div class="upslot" id="upStake"></div></div><div class="uparrow">➜</div><div><div class="uplbl">Получишь</div><div class="upslot" id="upTarget"></div></div></div>
@@ -984,23 +984,27 @@ $('cbStart').onclick=async()=>{const cfg=cbCfg(),cs=cbCases(),p=P();if(cbBusy)re
 const best=arr=>arr.reduce((a,b)=>!a||b.price>a.price?b:a,null);
 
 /* ===== АПГРЕЙД ===== */
-let upBusy=false,upSel=[],upMulti=2,upRot=0,upTargetItem=null,upAim=null;
+let upBusy=false,upSel=[],upMulti=2,upRot=0,upTargetItem=null,upAim=null,upTargetSum=-1;
 const UPM=[1.5,2,3,5,10,20];
 function upStake(){const p=P();upSel=upSel.filter(u=>p.inv.some(x=>x.uid===u));return p.inv.filter(x=>upSel.includes(x.uid))}
 const upSum=()=>upStake().reduce((s,x)=>s+x.price,0);
-function upChance(){if(upAim){const s=upSum();return s?Math.min(.95,.95*s/upAim.bp):0}return Math.min(.95,.95/upMulti)}
-function upPickTarget(){const st=upStake();if(!st.length){upTargetItem=null;return}
-  const maxR=Math.max(...st.map(x=>(itemById(x.itemId)||{r:0}).r)),wantR=Math.min(4,maxR+(upMulti>=5?2:upMulti>=2?1:0)),all=ALLITEMS();
-  const nocs=all.filter(i=>!i.bp),cand=nocs.filter(i=>i.r===wantR);upTargetItem=rnd(cand.length?cand:nocs)}
+// апгрейд всегда в скин CS2 дороже ставки, по его рыночной цене. Шанс = 95% × ставка / цена скина
+function upChance(){const t=upAim||upTargetItem,s=upSum();return t&&t.bp>s&&s?Math.min(.95,.95*s/t.bp):0}
+// множитель = «хочу скин примерно в N раз дороже ставки»: берём случайный скин рядом с этой ценой
+function upPickTarget(){const sum=upSum();upTargetSum=sum;if(!sum){upTargetItem=null;return}
+  const goal=sum*upMulti,cand=CSITEMS.filter(i=>i.bp>sum*1.05);if(!cand.length){upTargetItem=null;return}
+  const near=cand.filter(i=>i.bp>=goal*.85&&i.bp<=goal*1.15);
+  upTargetItem=near.length?rnd(near):cand.reduce((a,b)=>Math.abs(b.bp-goal)<Math.abs(a.bp-goal)?b:a)}
 function renderUp(){const st=upStake(),sum=st.reduce((s,x)=>s+x.price,0),ch=upChance();
-  if(upAim)upTargetItem=upAim;else if(!upTargetItem&&st.length)upPickTarget();
+  if(upAim)upTargetItem=upAim;else if(st.length&&(!upTargetItem||upTargetSum!==sum))upPickTarget();
   $('upStake').innerHTML=st.length?`<div><div class="igrid">${st.map(x=>icard(itemById(x.itemId),{mini:false})).join('')}</div><div style="font-weight:800;color:var(--green);margin-top:6px">${fmt(sum)} 🪙</div></div>`:'Нажми «Выбрать мемы»';
-  $('upTarget').innerHTML=upAim?`<div>${icard(upAim,{price:upAim.bp})}</div>`:st.length&&upTargetItem?`<div>${icard(upTargetItem,{price:Math.round(sum*upMulti)})}</div>`:'?';
+  const tgt=upAim||(st.length&&upTargetItem),tcap=t=>`<div style="font-weight:800;color:var(--gold);margin-top:6px">${fmt(t.bp)} 🪙</div><div style="font-size:12px;color:var(--muted);line-height:1.2;margin-top:2px">${esc(t.name)}</div>`;
+  $('upTarget').innerHTML=tgt?`<div>${icard(tgt,{price:tgt.bp})}${tcap(tgt)}</div>`:st.length?'<div class="hint" style="margin:0;text-align:center">Дороже скинов нет. Убери часть ставки</div>':'?';
   $('upAim').textContent=upAim?'✕ Вернуться к множителям':'🎯 Выбрать конкретный скин';
   $('upRing').style.background=`conic-gradient(#4ade80 0 ${ch*360}deg,#2a2e4d ${ch*360}deg 360deg)`;$('upPct').textContent=(ch*100).toFixed(ch<.1?1:0)+'%';
-  $('upMult').innerHTML=UPM.map(m=>`<button class="chip${m===upMulti&&!upAim?' on':''}" data-m="${m}">×${m}</button>`).join('');
-  $('upMult').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(upBusy)return;upAim=null;upMulti=+b.dataset.m;upPickTarget();renderUp()});
-  $('upGo').disabled=upBusy||!st.length||(upAim&&sum>=upAim.bp);$('upPick').disabled=upBusy;$('upAim').disabled=upBusy;
+  const maxBp=Math.max(...CSITEMS.map(i=>i.bp));$('upMult').innerHTML=UPM.map(m=>`<button class="chip${m===upMulti&&!upAim?' on':''}" data-m="${m}"${sum&&sum*m>maxBp*1.15&&m>1.5?' disabled style="opacity:.35"':''}>×${m}</button>`).join('');
+  $('upMult').querySelectorAll('button:not([disabled])').forEach(b=>b.onclick=()=>{if(upBusy)return;upAim=null;upMulti=+b.dataset.m;upPickTarget();renderUp()});
+  const tg=upAim||upTargetItem;$('upGo').disabled=upBusy||!st.length||!tg||sum>=tg.bp;$('upPick').disabled=upBusy;$('upAim').disabled=upBusy;
   if(upAim&&st.length&&sum>=upAim.bp)$('upPct').textContent='дешевле ставки'}
 $('upAim').onclick=()=>{if(upBusy)return;if(upAim){upAim=null;upTargetItem=null;return renderUp()}aimSheet()};
 // цель апгрейда: любой скин CS2 по его рыночной цене. Шанс = 95% × ставка / цена скина
@@ -1012,9 +1016,9 @@ function aimSheet(){const sum=upSum(),list=CSITEMS.filter(i=>i.bp>Math.max(sum,1
   $('aimQ').oninput=e=>{q=e.target.value;draw()};draw()}
 $('upPick').onclick=()=>invPickSheet('Что ставим на апгрейд',()=>true,upSel,10,sel=>{upSel=sel;upPickTarget();renderUp()});
 $('upGo').onclick=async()=>{if(upBusy)return;const p=P(),st=upStake();if(!st.length)return;
-  const sum=st.reduce((s,x)=>s+x.price,0),ch=upChance();let win,target=upAim||upTargetItem,tprice=upAim?upAim.bp:Math.round(sum*upMulti),srv=null;
-  if(upAim&&sum>=upAim.bp)return toast('Ставка дороже цели');
-  if(ON()){upBusy=true;renderUp();try{srv=await rpc('upgrade',upAim?{ids:upSel,aim:upAim.id}:{ids:upSel,mult:upMulti,target:target&&target.id})}catch(e){upBusy=false;renderUp();return toast(errText(e))}win=srv.win;target=itemOr(srv.item);tprice=+srv.price}
+  const sum=st.reduce((s,x)=>s+x.price,0),ch=upChance();let win,target=upAim||upTargetItem,tprice=target&&target.bp,srv=null;
+  if(!target||sum>=target.bp)return toast('Ставка дороже цели');
+  if(ON()){upBusy=true;renderUp();try{srv=await rpc('upgrade',{ids:upSel,aim:target.id})}catch(e){upBusy=false;renderUp();return toast(errText(e))}win=srv.win;target=itemOr(srv.item);tprice=+srv.price}
   else win=Math.random()<ch;
   const zone=ch*360,ang=win?Math.random()*zone*.9+zone*.05:zone+Math.random()*(360-zone)*.9+(360-zone)*.05;
   upRot=upRot-(upRot%360)+360*5+ang;upBusy=true;renderUp();haptic('medium');$('upNeedle').style.transform=`rotate(${upRot}deg)`;tickWatch($('upNeedle'),18,4200,'rot');
@@ -1097,7 +1101,7 @@ $('ctGo').onclick=async()=>{if(ctBusy)return;const p=P(),sel=ctPool().filter(x=>
 
 /* ===== ОНЛАЙН: вся экономика на сервере (Supabase) ===== */
 let onlineErr='',DB=null,onlineReady=false,GFEED=null,roomTimer=null,ROOM=null,roomAnimDone={},roomEv=0,roomEvReady=false,ROOMWATCH=null,pollT=null;
-const ERR={no_money:'Не хватает монет',free_limit:'Лимит бесплатного кейса. Подожди немного',locked_case:'Этот кейс закрыт',no_case:'Такого кейса нет',empty_case:'Кейс пустой',bad_items:'Этих мемов у тебя уже нет',bad_mult:'Такого множителя нет',bad_auto:'Такого автовывода нет',empty_stake:'Сначала поставь что-нибудь',bad_cases:'Эти кейсы нельзя взять в батл',crash_running:'Ракета ещё летит',no_game:'Игра не найдена',bad_code:'Такого промокода нет',used_code:'Этот код уже кто-то активировал',quest_not_ready:'Задание ещё не выполнено',no_room:'Комната не найдена',room_closed:'Батл в этой комнате уже прошёл',room_full:'Комната заполнена',not_in_room:'Ты не в этой комнате',only_host:'Запускает только создатель комнаты',need_players:'Нужно хотя бы 2 игрока',need_stakes:'Нужны ставки хотя бы от двух игроков',bad_kind:'Не тот тип батла',bad_emoji:'Такой реакции нет',bad_target:'Игрок не найден',empty_trade:'Обмен пустой',too_many:'Максимум 10 мемов',too_many_trades:'У тебя уже 10 открытых предложений',trade_closed:'Это предложение уже закрыто',not_yours:'Это не твоё предложение',no_player:'Игрок не найден',not_signed_in:'Нет входа в онлайн'};
+const ERR={no_money:'Не хватает монет',free_limit:'Лимит бесплатного кейса. Подожди немного',locked_case:'Этот кейс закрыт',no_case:'Такого кейса нет',empty_case:'Кейс пустой',bad_items:'Этих мемов у тебя уже нет',bad_mult:'Такого множителя нет',bad_auto:'Такого автовывода нет',empty_stake:'Сначала поставь что-нибудь',bad_cases:'Эти кейсы нельзя взять в батл',crash_running:'Ракета ещё летит',no_game:'Игра не найдена',bad_code:'Такого промокода нет',used_code:'Этот код уже кто-то активировал',quest_not_ready:'Задание ещё не выполнено',no_room:'Комната не найдена',room_closed:'Батл в этой комнате уже прошёл',room_full:'Комната заполнена',not_in_room:'Ты не в этой комнате',only_host:'Запускает только создатель комнаты',need_players:'Нужно хотя бы 2 игрока',need_stakes:'Нужны ставки хотя бы от двух игроков',bad_kind:'Не тот тип батла',bad_emoji:'Такой реакции нет',bad_target:'Игрок не найден',aim_cheap:'Скин должен быть дороже ставки',empty_trade:'Обмен пустой',too_many:'Максимум 10 мемов',too_many_trades:'У тебя уже 10 открытых предложений',trade_closed:'Это предложение уже закрыто',not_yours:'Это не твоё предложение',no_player:'Игрок не найден',not_signed_in:'Нет входа в онлайн'};
 const errText=e=>{const m=String(e&&e.message||e);return ERR[m]||(/fetch|network|load failed/i.test(m)?'Нет связи с сервером':m)};
 let SRV={perks:[],free:null,freeAt:0,quests:[],season:null,trades:0,me:null};
 let CATX=[];// предметы с сервера, которых нет в файлах игры (например, короны сезонов)
