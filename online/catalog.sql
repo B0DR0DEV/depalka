@@ -382,7 +382,7 @@ insert into public.catalog_cases(id, name, price, weights, mult, set, perk, drop
   ('mytishchi', 'Мытищи', 2500, array[30, 32, 22, 12, 4], 6.0, 'mell', null, null, true),
   ('ytpro', 'Ютуберы PRO', 3000, array[0, 20, 35, 30, 15], 3.0, 'yt', null, null, true),
   ('burmalda', 'Бурмалда', 5000, array[20, 30, 28, 16, 6], 9.0, 'mell', null, null, true),
-  ('cselite', 'CS2 Элитный', 3700, array[0, 30, 45, 18, 7], 1, 'cs', null, null, true),
+  ('cselite', 'CS2 Элитный', 12000, array[0, 0, 28, 30, 42], 1, 'cs', null, null, true),
   ('oligarch', 'Олигарх', 250000, array[0, 0, 0, 1, 1], 1, 'olig', null, '[["olig0", 3], ["olig1", 97], ["olig2", 140], ["olig3", 200], ["olig4", 220], ["olig5", 200], ["olig6", 140]]'::jsonb, true),
   ('csknife', 'Легенды CS2', 21500, array[0, 0, 0, 0, 1], 1, 'cs', null, null, true),
   ('dodep', 'Додеп', 10000, array[0, 30, 38, 22, 10], 12.0, 'mell', null, null, true),
