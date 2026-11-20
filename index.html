@@ -300,6 +300,7 @@ a.btn,a.tglink{display:inline-flex;align-items:center;justify-content:center;gap
     <div class="chips" id="multi" style="margin:12px 0 0"></div>
     <div class="openrow"><button class="bigbtn" id="openBtn">Открыть</button><div class="toggle" id="fast"><i>⚡</i>Быстро</div></div>
     <h2>Содержимое <small id="caseCount"></small></h2>
+    <div class="chips" id="caseOdds" style="flex-wrap:wrap;margin:-4px 0 12px"></div>
     <div class="igrid" id="caseItems"></div>
   </div>
 
@@ -656,6 +657,8 @@ function renderCases(){
   renderQTile();renderSubTile();
   $('caseList').querySelectorAll('.ccard').forEach(el=>el.onclick=()=>{curCase=allCases().find(c=>c.id===el.dataset.c);resetStrip();go('case')});
 }
+// шанс в процентах без «0.00%»: у редких скинов показываем значащие цифры
+const pct=v=>{const p=v*100;return(p>=1?p.toFixed(1):p>=.1?p.toFixed(2):p>=.01?p.toFixed(3):p.toFixed(4)).replace(/\.?0+$/,'')+'%'};
 function chances(c){if(c.drops){const t=c.drops.reduce((s,d)=>s+d[1],0);return c.drops.map(([id,w])=>({it:itemById(id),ch:w/t})).filter(x=>x.it).sort((a,b)=>b.it.bp-a.it.bp)}
   const pl=pool(setOf(c)),present=[...new Set(pl.map(i=>i.r))].filter(r=>c.w[r]>0),tot=present.reduce((s,r)=>s+c.w[r],0);
   return pl.filter(i=>c.w[i.r]>0).map(i=>({it:i,ch:c.w[i.r]/tot/pl.filter(x=>x.r===i.r).length})).sort((a,b)=>b.it.r-a.it.r||(b.it.bp||0)-(a.it.bp||0)||b.ch-a.ch)}
@@ -673,7 +676,10 @@ function renderCase(){const c=curCase;if(!c)return;
   $('multi').querySelectorAll('button').forEach(b=>b.onclick=()=>{if(opening)return;S.meta.multi=+b.dataset.m;save();resetStrip();renderCase()});
   $('openBtn').textContent=(n>1?`Открыть ${n} `:'Открыть ')+(cost?`за ${fmt(cost)}`:'бесплатно');$('openBtn').disabled=opening||p.bal<cost||(fl&&fl.left<=0);if(fl&&fl.left<=0)$('openBtn').textContent=`Лимит, жди ${fl.resetMin} мин`;
   const ch=chances(c);$('caseCount').textContent=ch.length+' шт.';
-  $('caseItems').innerHTML=ch.map(x=>icard(x.it,{chance:(x.ch*100<1?(x.ch*100).toFixed(2):(x.ch*100).toFixed(1))+'%'+(x.it.bp?' · ~'+fmtK(x.it.bp):'')})).join('');
+  $('caseItems').innerHTML=ch.map(x=>icard(x.it,{chance:pct(x.ch)+(x.it.bp?' · ~'+fmtK(x.it.bp):'')})).join('');
+  // шанс по редкостям: сколько открытий в среднем до ножа/легенды
+  const byR=[0,1,2,3,4].map(r=>ch.filter(x=>x.it.r===r).reduce((s,x)=>s+x.ch,0));
+  $('caseOdds').innerHTML=c.drops?'':byR.map((v,r)=>v>0?`<span class="chip" style="height:auto;padding:6px 12px;cursor:default;border-color:${R[r].c}88"><b style="color:${R[r].c}">${R[r].n}</b> ${pct(v)}${v<.2?` <span style="color:var(--muted);font-weight:600">· раз в ${fmt(Math.round(1/v))}</span>`:''}</span>`:'').join('');
   $('fast').classList.toggle('on',!!S.meta.fast)}
 function renderInv(){const p=P();$('invOnline').style.display=ON()?'':'none';$('trBadge').innerHTML=SRV.trades?`<span class="badge">${SRV.trades}</span>`:'';$('invVal').textContent=fmt(invValue(p));$('invCnt').textContent=p.inv.length;
   const g=$('invGrid');if(!p.inv.length){g.innerHTML='<div class="hint" style="grid-column:1/-1">Пусто. Иди открывай кейсы.</div>';return}
