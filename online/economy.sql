@@ -27,6 +27,8 @@ create table if not exists public.catalog_items (
   set text not null,
   img text
 );
+-- у скинов CS2 своя рыночная цена; у мемов цена считается от редкости и множителя кейса
+alter table public.catalog_items add column if not exists base_price bigint;
 create table if not exists public.catalog_cases (
   id text primary key,
   name text not null,
@@ -186,6 +188,8 @@ end $$;
 create or replace function public.msk_today() returns date language sql stable as $$ select (now() at time zone 'Europe/Moscow')::date $$;
 create or replace function public.base_price(r int) returns bigint language sql immutable as $$ select (array[15,60,200,800,4000])[r+1]::bigint $$;
 create or replace function public.roll_price(r int, m numeric) returns bigint language sql volatile as $$ select greatest(1, round(public.base_price(r) * m * (0.8 + random()*0.4)))::bigint $$;
+create or replace function public.item_price(it public.catalog_items, m numeric) returns bigint language sql volatile as $$
+  select case when it.base_price is not null then greatest(1, round(it.base_price * (0.85 + random()*0.3)))::bigint else public.roll_price(it.rarity, m) end $$;
 create or replace function public.me() returns uuid language plpgsql stable as $$
 begin if auth.uid() is null then raise exception 'not_signed_in'; end if; return auth.uid(); end $$;
 
@@ -400,7 +404,7 @@ begin
   update public.wallets set balance = balance - cost, cases = cases + n where user_id = u;
   for i in 1..n loop
     it := public.pick_item(c.set, c.weights);
-    pr := public.roll_price(it.rarity, c.mult);
+    pr := public.item_price(it, c.mult);
     nid := public.give_item(u, it.id, pr);
     total := total + pr;
     drops := drops || jsonb_build_object('id', nid, 'item', it.id, 'price', pr);
@@ -463,17 +467,28 @@ end $$;
 create or replace function public.api_upgrade(p jsonb) returns jsonb language plpgsql security definer set search_path = public as $$
 declare w public.wallets := public.w_get(); u uuid := w.user_id; m numeric := (p->>'mult')::numeric; ids bigint[]; cnt int; s bigint; maxr int; wantr int; ch numeric; t public.catalog_items; tp bigint; win boolean; nid bigint := null;
 begin
-  if m is null or m not in (1.5, 2, 3, 5, 10, 20) then raise exception 'bad_mult'; end if;
   select array_agg(x::bigint) into ids from jsonb_array_elements_text(p->'ids') x;
   select count(*), coalesce(sum(i.price), 0), max(c.rarity) into cnt, s, maxr from public.inventory i join public.catalog_items c on c.id = i.item_id
     where i.user_id = u and i.locked is null and i.id = any (ids);
   if cnt < 1 or cnt > 10 or cnt <> coalesce(array_length(ids, 1), 0) then raise exception 'bad_items'; end if;
-  ch := least(0.95, 0.95 / m);
-  wantr := least(4, maxr + case when m >= 5 then 2 when m >= 2 then 1 else 0 end);
-  if p ? 'target' then select * into t from public.pool_items('all') where id = p->>'target' and rarity = wantr; end if;
-  if t.id is null then select * into t from public.pool_items('all') where rarity = wantr order by random() limit 1; end if;
-  if t.id is null then select * into t from public.pool_items('all') order by random() limit 1; end if;
-  tp := round(s * m);
+  if p ? 'aim' then
+    -- цель — конкретный скин по его рыночной цене; шанс = 95% × ставка / цена
+    select * into t from public.catalog_items where id = p->>'aim' and base_price is not null and set = 'cs';
+    if t.id is null then raise exception 'bad_target'; end if;
+    if s >= t.base_price then raise exception 'aim_cheap'; end if;
+    tp := t.base_price;
+    ch := least(0.95, 0.95 * s / tp);
+    m := round(tp::numeric / greatest(s, 1), 2);
+  else
+    if m is null or m not in (1.5, 2, 3, 5, 10, 20) then raise exception 'bad_mult'; end if;
+    ch := least(0.95, 0.95 / m);
+    wantr := least(4, maxr + case when m >= 5 then 2 when m >= 2 then 1 else 0 end);
+    -- по множителю выпадают только мемы: у скинов своя цена, в них целятся отдельно
+    if p ? 'target' then select * into t from public.pool_items('all') where id = p->>'target' and rarity = wantr and base_price is null; end if;
+    if t.id is null then select * into t from public.pool_items('all') where rarity = wantr and base_price is null order by random() limit 1; end if;
+    if t.id is null then select * into t from public.pool_items('all') where base_price is null order by random() limit 1; end if;
+    tp := round(s * m);
+  end if;
   delete from public.inventory where user_id = u and id = any (ids);
   win := random() < ch;
   if win then
@@ -585,7 +600,8 @@ begin
     items := '[]'::jsonb; bs := 0;
     while bs < target * 0.8 and jsonb_array_length(items) < 8 loop
       it := public.pick_item('all', array[50,30,13,5,2]);
-      pr := public.roll_price(it.rarity, 1);
+      pr := public.item_price(it, 1);
+      continue when pr > target * 1.3;
       exit when bs + pr > target * 1.3 and jsonb_array_length(items) > 0;
       items := items || jsonb_build_object('item', it.id, 'price', pr); bs := bs + pr;
     end loop;
@@ -631,7 +647,7 @@ begin
     select * into c from public.catalog_cases where id = cids[i];
     rd := '[]'::jsonb;
     for k in 1 .. np loop
-      it := public.pick_item(c.set, c.weights); pr := public.roll_price(it.rarity, c.mult);
+      it := public.pick_item(c.set, c.weights); pr := public.item_price(it, c.mult);
       rd := rd || jsonb_build_object('item', it.id, 'price', pr); totals[k] := totals[k] + pr; all_total := all_total + pr;
     end loop;
     drops := drops || jsonb_build_array(rd);
@@ -780,7 +796,7 @@ begin
       select * into c from public.catalog_cases where id = r.cases[i];
       rd := '[]'::jsonb;
       for k in 1 .. n loop
-        it := public.pick_item(c.set, c.weights); pr := public.roll_price(it.rarity, c.mult);
+        it := public.pick_item(c.set, c.weights); pr := public.item_price(it, c.mult);
         rd := rd || jsonb_build_object('item', it.id, 'price', pr); totals[k] := totals[k] + pr; all_total := all_total + pr;
       end loop;
       drops := drops || jsonb_build_array(rd);
