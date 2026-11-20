@@ -34,6 +34,8 @@ for i, (name, r, bp) in enumerate(cs_list):
 # особые предметы
 items.append(("gold-karambit", "★ Золотой Karambit | Депость", 4, "special", None))
 items.append(("sub-badge", "📢 Подписчик Депости", 3, "special", None))
+for iid, name, r, bp in json.loads(re.search(r"const OLIG=(\[\[.*?\]\]);", html, re.S).group(1)):
+    items.append((iid, name, int(r), "special", int(bp)))
 
 # кейсы из index.html
 case_block = re.search(r"const CASES=\[(.*?)\n\];", html, re.S).group(1)
@@ -44,8 +46,10 @@ for line in case_block.strip().splitlines():
     mult = re.search(r"mult:([\d.]+)", line)
     st = re.search(r"set:'([^']+)'", line)
     perk = re.search(r"perk:'([^']+)'", line)
+    drops = re.search(r"drops:(\[\[.*?\]\])", line)
+    drops = json.dumps(json.loads(drops.group(1).replace("'", '"'))) if drops else None
     cases.append((m.group(1), m.group(2), int(m.group(3)), [int(x) for x in m.group(4).split(",")],
-                  float(mult.group(1)) if mult else 1, st.group(1) if st else "mell", perk.group(1) if perk else None))
+                  float(mult.group(1)) if mult else 1, st.group(1) if st else "mell", perk.group(1) if perk else None, drops))
 
 # паки из packs/*/pack.json
 for pj in sorted(glob.glob(os.path.join(ROOT, "packs", "*", "pack.json"))):
@@ -55,7 +59,7 @@ for pj in sorted(glob.glob(os.path.join(ROOT, "packs", "*", "pack.json"))):
         items.append((f"pk:{pid}:{x['file']}", str(x.get("name") or x["file"])[:40], max(0, min(4, int(x.get("rarity", 0)))), "pk:" + pid, None))
     w = pk.get("weights") if isinstance(pk.get("weights"), list) and len(pk.get("weights")) == 5 else [45, 30, 15, 7, 3]
     cases.append(("pk-" + pid, str(pk.get("name") or pid)[:30], max(0, int(pk.get("price") or 0)), [int(v) for v in w],
-                  float(pk.get("mult") or 1), "pk:" + pid, None))
+                  float(pk.get("mult") or 1), "pk:" + pid, None, None))
 
 # список паков для игры (игра сама грузит все паки из этого списка)
 pack_ids = [os.path.basename(os.path.dirname(pj)) for pj in sorted(glob.glob(os.path.join(ROOT, "packs", "*", "pack.json")))]
@@ -66,9 +70,9 @@ out = ["-- Каталог Депости: предметы и кейсы. Сге
 out.append(",\n".join(f"  ({q(i)}, {q(n)}, {r}, {q(s)}, {bp if bp is not None else 'null'})" for i, n, r, s, bp in items))
 out.append("on conflict (id) do update set name = excluded.name, rarity = excluded.rarity, set = excluded.set, base_price = excluded.base_price;")
 out.append("update public.catalog_cases set active = false;")
-out.append("insert into public.catalog_cases(id, name, price, weights, mult, set, perk, active) values")
-out.append(",\n".join(f"  ({q(i)}, {q(n)}, {p}, array{w}, {m}, {q(s)}, {q(pk) if pk else 'null'}, true)" for i, n, p, w, m, s, pk in cases))
-out.append("on conflict (id) do update set name = excluded.name, price = excluded.price, weights = excluded.weights, mult = excluded.mult, set = excluded.set, perk = excluded.perk, active = true;")
+out.append("insert into public.catalog_cases(id, name, price, weights, mult, set, perk, drops, active) values")
+out.append(",\n".join(f"  ({q(i)}, {q(n)}, {p}, array{w}, {m}, {q(s)}, {q(pk) if pk else 'null'}, {q(dr) + '::jsonb' if dr else 'null'}, true)" for i, n, p, w, m, s, pk, dr in cases))
+out.append("on conflict (id) do update set name = excluded.name, price = excluded.price, weights = excluded.weights, mult = excluded.mult, set = excluded.set, perk = excluded.perk, drops = excluded.drops, active = true;")
 catalog = "\n".join(out) + "\n"
 open(os.path.join(ROOT, "online", "catalog.sql"), "w", encoding="utf-8").write(catalog)
 

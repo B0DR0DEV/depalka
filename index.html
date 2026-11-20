@@ -70,6 +70,7 @@ h2 small{font:700 14px Manrope;color:var(--muted);margin-left:6px}
 .art .it{position:absolute;border-radius:14px;overflow:hidden;box-shadow:0 8px 18px rgba(0,0,0,.45);display:grid;place-items:center;background:#000}
 .art .it img{width:100%;height:100%;object-fit:cover}
 .art .it .emo{font-size:46px;line-height:1}
+.art .it.sk{background:radial-gradient(circle at 50% 45%,rgba(255,255,255,.22),rgba(18,20,38,.92) 72%)}.art .it.sk img{object-fit:contain;padding:6%;box-sizing:border-box}
 .art .i0{width:56%;height:62%;left:22%;top:16%;z-index:3;border:3px solid rgba(255,255,255,.85)}
 .art .i1{width:34%;height:38%;left:4%;top:6%;transform:rotate(-14deg);z-index:2}
 .art .i2{width:34%;height:38%;right:4%;bottom:6%;transform:rotate(12deg);z-index:2}
@@ -448,7 +449,8 @@ const CASES=[
   {id:'ytpro',name:'Ютуберы PRO',price:3000,w:[0,20,35,30,15],mult:3,bg:['#ff3d3d','#7a1f1f'],badge:'▶️ PRO',set:'yt'},
   {id:'burmalda',name:'Бурмалда',price:5000,w:[20,30,28,16,6],mult:9,bg:['#ff5a2b','#7a1fbf']},
   {id:'cselite',name:'CS2 Элитный',price:3700,w:[0,30,45,18,7],bg:['#2bd9ff','#2b3dbf'],badge:'🔫 Элита',set:'cs'},
-  {id:'csknife',name:'Нож или перчатки',price:21500,w:[0,0,0,0,1],bg:['#ffcf4a','#3a2b0a'],badge:'🔪 100% нож',set:'cs'},
+  {id:'oligarch',name:'Олигарх',price:250000,w:[0,0,0,1,1],set:'olig',drops:[['olig0', 3], ['olig1', 97], ['olig2', 140], ['olig3', 200], ['olig4', 220], ['olig5', 200], ['olig6', 140]],bg:['#7fe7ff','#0b1440'],badge:'💎 500к'},
+  {id:'csknife',name:'Легенды CS2',price:21500,w:[0,0,0,0,1],bg:['#ffcf4a','#3a2b0a'],badge:'🔪 100% легенда',set:'cs'},
   {id:'dodep',name:'Додеп',price:10000,w:[0,30,38,22,10],mult:12,bg:['#d32ce6','#3a1f8a'],badge:'🎰 Додеп'},
   {id:'major',name:'Мажор',price:25000,w:[0,0,50,35,15],mult:20,bg:['#ffd84a','#b8860b'],badge:'💎 Мажор'},
   {id:'millioner',name:'Миллионер',price:50000,w:[0,0,30,45,25],mult:28,bg:['#7cff9b','#0f7a4a'],badge:'💰 Миллионер'},
@@ -541,7 +543,7 @@ async function loadRepo(man){
   const imgs=PACK.filter(p=>p.repo&&p.kind==='img');
   for(let i=0;i<imgs.length;i+=4)await Promise.all(imgs.slice(i,i+4).map(makeThumb));
   }
-const pool=(set='mell')=>{if(set==='cs')return CSITEMS;if(set==='all')return[...pool('mell'),...pool('yt'),...CSITEMS,...PACKITEMS];if(set.startsWith('pk:'))return PACKITEMS.filter(i=>i.set===set);if(set==='secret')return[...pool('mell'),...pool('yt'),...CSITEMS].filter(i=>i.r>=3);const im=PACK.filter(p=>p.kind==='img'&&(p.set||'mell')===set);return im.length||set!=='mell'?im:DEF};
+const pool=(set='mell')=>{if(set==='cs')return CSITEMS;if(set==='olig')return SPECIAL.filter(i=>/^olig/.test(i.id));if(set==='all')return[...pool('mell'),...pool('yt'),...CSITEMS,...PACKITEMS];if(set.startsWith('pk:'))return PACKITEMS.filter(i=>i.set===set);if(set==='secret')return[...pool('mell'),...pool('yt'),...CSITEMS].filter(i=>i.r>=3);const im=PACK.filter(p=>p.kind==='img'&&(p.set||'mell')===set);return im.length||set!=='mell'?im:DEF};
 const setOf=c=>c.set||'mell';
 const vids=()=>PACK.filter(p=>p.kind==='vid');
 let PACKITEMS=[];
@@ -561,6 +563,9 @@ async function loadPacks(){let ids=[];try{const r=await fetch('packs/index.json'
 function openPackLink(src){const m=String(src||'').match(/packs\/([^/]+)\//),id=(m?m[1]:String(src||'')).replace(/[^a-z0-9_-]/gi,'');
   const c=allCases().find(x=>x.id==='pk-'+id);if(!c)return toast('Пак не найден');found('pack');curCase=c;resetStrip();go('case')}
 const SPECIAL=[{id:'gold-karambit',name:'★ Золотой Karambit | Депость',r:4,set:'special',kind:'img',url:gunSVG('knife',['#fff6c4','#ffcf4a','#b8860b'],'#ffcf4a')},{id:'sub-badge',name:'📢 Подписчик Депости',r:3,set:'special',e:'📢'}];
+// эксклюзивы кейса «Олигарх»: [id, название, редкость, цена]. Цена фиксированная, выпадают только из этого кейса
+const OLIG=[["olig0","💎 Karambit | Бриллиант",4,500000],["olig1","👑 AWP | Dragon Lore · Сувенир",4,320000],["olig2","Butterfly | Платина",4,270000],["olig3","Karambit | Чёрный жемчуг",4,240000],["olig4","👑 M4A4 | Howl · Сувенир",3,215000],["olig5","Sport Gloves | Королевские",3,195000],["olig6","Butterfly | Рубиновая кровь",3,175000]];
+SPECIAL.push(...OLIG.map(([id,name,r,bp])=>({id,name,r,bp,set:'special',kind:'img',url:'skins/'+id+'.webp'})));
 const itemById=id=>PACK.find(p=>p.id===id)||DEF.find(d=>d.id===id)||CSITEMS.find(d=>d.id===id)||SPECIAL.find(d=>d.id===id)||PACKITEMS.find(d=>d.id===id)||CATX.find(d=>d.id===id)||(/^crown-s\d+$/.test(id)?crownItem(id):null);
 const itemOr=id=>itemById(id)||{id,name:'???',r:0,e:'❓'};
 const plural=(n,a,b,c)=>{n=Math.abs(n)%100;const k=n%10;return n>10&&n<20?c:k===1?a:k>=2&&k<=4?b:c};
@@ -631,10 +636,12 @@ function artHTML(c,big){
   const allowed=sorted.filter(i=>c.w[i.r]>0),seed=Math.max(0,allCases().findIndex(x=>x.id===c.id));
   const pick=k=>allowed.length?allowed[(seed*3+k*5)%allowed.length]:null;
   const top=allowed.filter(i=>i.r===Math.max(...allowed.map(x=>x.r)));
-  const a=top.length?top[seed%top.length]:pick(0),b=pick(1),d=pick(2);
+  const a=allowed.some(i=>i.bp)?allowed.reduce((m,i)=>(i.bp||0)>(m.bp||0)?i:m):top.length?top[seed%top.length]:pick(0),b=pick(1),d=pick(2);
   return `<div class="art"${big?' style="aspect-ratio:16/9"':''}><div class="glow" style="background:radial-gradient(circle at 50% 55%,${c.bg[0]} 0%,${c.bg[1]} 55%,#1c1f33 100%)"></div><div class="rays"></div>
     ${c.badge?`<div class="bdg">${c.badge}</div>`:''}
-    <div class="it i1">${vis(b)}</div><div class="it i2">${vis(d)}</div><div class="it i0">${vis(a)}</div></div>`}
+    <div class="it i1${sk(b)}">${vis(b)}</div><div class="it i2${sk(d)}">${vis(d)}</div><div class="it i0${sk(a)}">${vis(a)}</div></div>`}
+// у скинов прозрачный фон: показываем их на светлом пятне, а не на чёрном квадрате
+const sk=x=>x&&x.bp?' sk':'';
 let filter='all';
 const FILTERS=[['all','Все'],['free','Бесплатные'],['cheap','До 1к'],['mid','1к–10к'],['rich','10к+']];
 const fmtK=n=>n>=10000?(n%1000?(n/1000).toFixed(1):n/1000)+'к':fmt(n);
@@ -649,7 +656,8 @@ function renderCases(){
   renderQTile();renderSubTile();
   $('caseList').querySelectorAll('.ccard').forEach(el=>el.onclick=()=>{curCase=allCases().find(c=>c.id===el.dataset.c);resetStrip();go('case')});
 }
-function chances(c){const pl=pool(setOf(c)),present=[...new Set(pl.map(i=>i.r))].filter(r=>c.w[r]>0),tot=present.reduce((s,r)=>s+c.w[r],0);
+function chances(c){if(c.drops){const t=c.drops.reduce((s,d)=>s+d[1],0);return c.drops.map(([id,w])=>({it:itemById(id),ch:w/t})).filter(x=>x.it).sort((a,b)=>b.it.bp-a.it.bp)}
+  const pl=pool(setOf(c)),present=[...new Set(pl.map(i=>i.r))].filter(r=>c.w[r]>0),tot=present.reduce((s,r)=>s+c.w[r],0);
   return pl.filter(i=>c.w[i.r]>0).map(i=>({it:i,ch:c.w[i.r]/tot/pl.filter(x=>x.r===i.r).length})).sort((a,b)=>b.it.r-a.it.r||(b.it.bp||0)-(a.it.bp||0)||b.ch-a.ch)}
 const FREE_MAX=100,FREE_WIN=10*60*1000;
 const hasPerk=k=>(SRV.perks||[]).includes(k)||(!ON()&&!!(SL.meta.perks&&SL.meta.perks[k]));
@@ -735,6 +743,8 @@ $('topup').onclick=async()=>{
     $('gofree').onclick=()=>{closeSheet();curCase=CASES[0];resetStrip();go('case')}}};
 
 /* ===== cases ===== */
+// у некоторых кейсов свой список предметов с весами (drops), у остальных — редкость, потом случайный предмет
+function pickCase(c){if(c.drops){const t=c.drops.reduce((s,d)=>s+d[1],0);let x=Math.random()*t;for(const[id,w]of c.drops){x-=w;if(x<=0)return itemById(id)}return itemById(c.drops[0][0])}return pickItem(c.w,setOf(c))}
 function pickItem(w,set){const pl=pool(set).filter(i=>w[i.r]>0);const present=[...new Set(pl.map(x=>x.r))];
   const tot=present.reduce((s,r)=>s+w[r],0);let x=Math.random()*tot,rr=present[0];for(const r of present){x-=w[r];if(x<=0){rr=r;break}}
   return rnd(pl.filter(i=>i.r===rr))}
@@ -744,7 +754,7 @@ function stripsHTML(n,cards){const box=$('strips');box.className='strips'+(n>=6?
   box.innerHTML=cards.map(h=>`<div class="strip${n>1?' mstrip':''}"><div class="track">${h}</div><div class="fade"></div><div class="marker"></div></div>`).join('');
   return [...box.querySelectorAll('.track')]}
 function resetStrip(){if(!curCase)return;const n=nOf(curCase),set=setOf(curCase),cards=[];
-  for(let k=0;k<n;k++){let h='';for(let i=0;i<(n>1?6:12);i++)h+=icard(pickItem(curCase.w,set),{mini:n>1});cards.push(h)}stripsHTML(n,cards)}
+  for(let k=0;k<n;k++){let h='';for(let i=0;i<(n>1?6:12);i++)h+=icard(pickCase(curCase),{mini:n>1});cards.push(h)}stripsHTML(n,cards)}
 $('caseBack').onclick=()=>{if(!opening)go('cases')};
 $('fast').onclick=()=>{S.meta.fast=!S.meta.fast;save();renderCase()};
 $('openBtn').onclick=async()=>{
@@ -755,7 +765,7 @@ $('openBtn').onclick=async()=>{
   if(ON()){opening=true;$('openBtn').disabled=true;try{srv=await rpc('open_case',{case:c.id,n})}catch(e){opening=false;renderCase();return toast(errText(e))}if(srv.free)setFree(srv.free)}
   else if(freeLimited(c))S.meta.freeLog.push(Date.now());
   p.bal-=cost;const mini=n>1,WI=mini?20:30,N=mini?24:36,wins=[],cards=[];
-  for(let k=0;k<(srv?srv.drops.length:n);k++){const w=srv?itemOr(srv.drops[k].item):pickItem(c.w,set);wins.push(w);let h='';for(let i=0;i<N;i++)h+=icard(i===WI?w:pickItem(c.w,set),{mini});cards.push(h)}
+  for(let k=0;k<(srv?srv.drops.length:n);k++){const w=srv?itemOr(srv.drops[k].item):pickCase(c);wins.push(w);let h='';for(let i=0;i<N;i++)h+=icard(i===WI?w:pickCase(c),{mini});cards.push(h)}
   opening=true;haptic('medium');SND.open();renderHdr();$('openBtn').disabled=true;
   const trs=stripsHTML(n,cards);
   {const y=$('strips').getBoundingClientRect().top+scrollY-74;if(Math.abs(scrollY-y)>40)scrollTo({top:Math.max(0,y),behavior:'smooth'})}
@@ -949,7 +959,7 @@ async function cbArenaRun(A,ps,rounds,drops,pickFill){
     rows.forEach((row,i)=>{const d=drops[ri][i];ps[i].total+=d.price;ps[i].loot.push(d);row.querySelector('.cbtot').textContent=fmt(ps[i].total);row.querySelector('.cbloot').insertAdjacentHTML('beforeend',tinyThumb(d.w))});
     const lead=Math.max(...ps.map(x=>x.total));rows.forEach((row,i)=>row.classList.toggle('win',ps[i].total===lead));
     haptic('light');await new Promise(r=>setTimeout(r,fast?300:700))}}
-const dropPrice=(w,c,rng=Math.random)=>w.bp?Math.round(w.bp*(.85+rng()*.3)):Math.round(R[w.r].p*(c.mult||1)*(.8+rng()*.4));
+const dropPrice=(w,c,rng=Math.random)=>w.bp?(w.set==='cs'?Math.round(w.bp*(.85+rng()*.3)):w.bp):Math.round(R[w.r].p*(c.mult||1)*(.8+rng()*.4));
 $('cbStart').onclick=async()=>{const cfg=cbCfg(),cs=cbCases(),p=P();if(cbBusy)return;
   const rounds=cfg.rounds.map(id=>cs.find(c=>c.id===id)).filter(Boolean),cost=rounds.reduce((s,c)=>s+c.price,0);
   if(!rounds.length)return;if(p.bal<cost)return toast('Не хватает монет на батл');
@@ -957,8 +967,8 @@ $('cbStart').onclick=async()=>{const cfg=cbCfg(),cs=cbCases(),p=P();if(cbBusy)re
   p.bal-=cost;cbBusy=true;save();renderHdr();renderCB();haptic('medium');
   const bots=srv?(srv.bots||[]).map(([name,emo,color])=>({name,emo,color,avatar:null,bot:true})):[...BOTS].sort(()=>Math.random()-.5).slice(0,cfg.players-1).map(([name,emo,color])=>({name,emo,color,avatar:null,bot:true}));
   const ps=[{name:p.name,color:p.color,avatar:p.avatar,me:true},...bots];
-  const drops=srv?srv.drops.map(rd=>rd.map(x=>({w:itemOr(x.item),price:+x.price}))):rounds.map(c=>ps.map(()=>{const w=pickItem(c.w,setOf(c));return{w,price:dropPrice(w,c)}}));
-  await cbArenaRun($('cbArena'),ps,rounds,drops,c=>pickItem(c.w,setOf(c)));
+  const drops=srv?srv.drops.map(rd=>rd.map(x=>({w:itemOr(x.item),price:+x.price}))):rounds.map(c=>ps.map(()=>{const w=pickCase(c);return{w,price:dropPrice(w,c)}}));
+  await cbArenaRun($('cbArena'),ps,rounds,drops,c=>pickCase(c));
   const top=Math.max(...ps.map(x=>x.total)),tied=ps.filter(x=>x.total===top),winner=srv?ps[srv.winner]:rnd(tied),all=ps.flatMap(x=>x.loot),sum=all.reduce((s,x)=>s+x.price,0);
   if(winner.me){if(srv)(srv.new||[]).forEach(x=>p.inv.push({uid:x.id,itemId:x.item,price:+x.price}));else all.forEach(x=>p.inv.push({uid:'c'+Date.now()+Math.random().toString(36).slice(2,7),itemId:x.w.id,price:x.price}));if(cfg.players>=4)found('cbwin')}
   if(srv)p.bal=Math.max(0,+srv.bal-stagedCoins());
@@ -1289,7 +1299,7 @@ async function finishRoom(d){const me=DB.uid,code=d.room.code,ps=d.players.map(x
   else{const res=d.room.result||{},order=res.order||[],ps2=order.map(u=>ps.find(x=>x.uid===u)).filter(Boolean);
     const rounds=(d.room.cases||[]).map(id=>allCases().find(c=>c.id===id)||{id,name:id,w:[1,1,1,1,1],set:'mell'});
     const drops=(res.drops||[]).map(rd=>rd.map(x=>({w:itemOr(x.item),price:+x.price})));
-    A.innerHTML=emoBar(code)+'<div id="onCb"></div>';await cbArenaRun($('onCb'),ps2,rounds,drops,c=>pickItem(c.w,setOf(c)));
+    A.innerHTML=emoBar(code)+'<div id="onCb"></div>';await cbArenaRun($('onCb'),ps2,rounds,drops,c=>pickCase(c));
     const win=ps2.find(x=>x.uid===d.room.winner)||ps2[0],all=ps2.flatMap(x=>x.loot),sum=all.reduce((s,x)=>s+x.price,0);
     if(win.uid===me)found('onlinewin');SO.meta.room=null;ROOM=null;await refreshMe();haptic('heavy');win.uid===me?SND.win():SND.lose();
     overlay(win.uid===me?{grid:all.sort((a,b)=>b.w.r-a.w.r||b.price-a.price).map(x=>icard(x.w,{price:x.price})).join(''),rc:'#4ade80',title:'ТЫ ЗАБРАЛ ВСЁ',text:`Онлайн кейс-батл выигран: ${all.length} мемов на ${fmt(sum)} 🪙.`}

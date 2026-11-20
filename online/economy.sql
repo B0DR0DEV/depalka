@@ -39,6 +39,8 @@ create table if not exists public.catalog_cases (
   perk text,
   active boolean not null default true
 );
+-- у некоторых кейсов свой список предметов с весами: [[id, вес], ...]
+alter table public.catalog_cases add column if not exists drops jsonb;
 
 -- ---------- сезоны и игроки ----------
 create table if not exists public.seasons (
@@ -189,7 +191,9 @@ create or replace function public.msk_today() returns date language sql stable a
 create or replace function public.base_price(r int) returns bigint language sql immutable as $$ select (array[15,60,200,800,4000])[r+1]::bigint $$;
 create or replace function public.roll_price(r int, m numeric) returns bigint language sql volatile as $$ select greatest(1, round(public.base_price(r) * m * (0.8 + random()*0.4)))::bigint $$;
 create or replace function public.item_price(it public.catalog_items, m numeric) returns bigint language sql volatile as $$
-  select case when it.base_price is not null then greatest(1, round(it.base_price * (0.85 + random()*0.3)))::bigint else public.roll_price(it.rarity, m) end $$;
+  select case when it.base_price is null then public.roll_price(it.rarity, m)
+              when it.set = 'cs' then greatest(1, round(it.base_price * (0.85 + random()*0.3)))::bigint
+              else it.base_price end $$;
 create or replace function public.me() returns uuid language plpgsql stable as $$
 begin if auth.uid() is null then raise exception 'not_signed_in'; end if; return auth.uid(); end $$;
 
@@ -250,6 +254,19 @@ begin
   foreach r in array rs loop chosen := r; x := x - p_w[r + 1]; exit when x <= 0; end loop;
   select * into it from public.pool_items(p_set) i where i.rarity = chosen order by random() limit 1;
   return it;
+end $$;
+
+create or replace function public.pick_case(c public.catalog_cases) returns public.catalog_items language plpgsql volatile security definer set search_path = public as $$
+declare tot numeric; x numeric; d jsonb; it public.catalog_items;
+begin
+  if c.drops is null then return public.pick_item(c.set, c.weights); end if;
+  select sum((e->>1)::numeric) into tot from jsonb_array_elements(c.drops) e;
+  x := random() * tot;
+  for d in select * from jsonb_array_elements(c.drops) loop
+    x := x - (d->>1)::numeric;
+    if x <= 0 then select * into it from public.catalog_items where id = d->>0; return it; end if;
+  end loop;
+  select * into it from public.catalog_items where id = c.drops->0->>0; return it;
 end $$;
 
 -- выдать предмет: инвентарь + лучший дроп + LIVE
@@ -403,7 +420,7 @@ begin
   if w.balance < cost then raise exception 'no_money'; end if;
   update public.wallets set balance = balance - cost, cases = cases + n where user_id = u;
   for i in 1..n loop
-    it := public.pick_item(c.set, c.weights);
+    it := public.pick_case(c);
     pr := public.item_price(it, c.mult);
     nid := public.give_item(u, it.id, pr);
     total := total + pr;
@@ -647,7 +664,7 @@ begin
     select * into c from public.catalog_cases where id = cids[i];
     rd := '[]'::jsonb;
     for k in 1 .. np loop
-      it := public.pick_item(c.set, c.weights); pr := public.item_price(it, c.mult);
+      it := public.pick_case(c); pr := public.item_price(it, c.mult);
       rd := rd || jsonb_build_object('item', it.id, 'price', pr); totals[k] := totals[k] + pr; all_total := all_total + pr;
     end loop;
     drops := drops || jsonb_build_array(rd);
@@ -796,7 +813,7 @@ begin
       select * into c from public.catalog_cases where id = r.cases[i];
       rd := '[]'::jsonb;
       for k in 1 .. n loop
-        it := public.pick_item(c.set, c.weights); pr := public.item_price(it, c.mult);
+        it := public.pick_case(c); pr := public.item_price(it, c.mult);
         rd := rd || jsonb_build_object('item', it.id, 'price', pr); totals[k] := totals[k] + pr; all_total := all_total + pr;
       end loop;
       drops := drops || jsonb_build_array(rd);
