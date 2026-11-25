@@ -258,7 +258,7 @@ begin
   if extract(week from v_week)::int % 3 = 0 then
     event_title := 'Неделя коллекционера';
     event_desc := 'Найди 3 разных предмета за эту неделю.';
-  elsif extract(week from week)::int % 3 = 1 then
+  elsif extract(week from v_week)::int % 3 = 1 then
     event_title := 'Неделя открытий';
     event_desc := 'Пополняй коллекцию новыми предметами.';
   else
@@ -287,7 +287,7 @@ declare
   u uuid := public.me();
   code text := coalesce(p->>'code','');
   w public.wallets;
-  week date := date_trunc('week', now())::date;
+  v_week date := date_trunc('week', now())::date;
   progress_now int := 0;
   goal_now int := 0;
   reward int := 0;
@@ -299,7 +299,7 @@ begin
     select count(*) into progress_now from public.collection_discoveries
       where user_id=u and first_seen>=v_week and first_seen<v_week+7;
     if progress_now < 3 then raise exception 'quest_not_ready'; end if;
-    insert into public.weekly_event_claims(user_id,week_start) values(u,week)
+    insert into public.weekly_event_claims(user_id,week_start) values(u,v_week)
       on conflict do nothing;
     if not found then raise exception 'already_claimed'; end if;
     reward := 75;
