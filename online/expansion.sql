@@ -138,40 +138,6 @@ create trigger extra_inventory_delete_trg
 after delete on public.inventory
 for each row execute function public.extra_inventory_delete();
 
-create or replace function public.extra_crash_history()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  if tg_op = 'INSERT' then
-    insert into public.game_history(user_id, kind, details)
-    values (new.user_id, 'crash_start', jsonb_build_object('bet', new.bet));
-    return new;
-  end if;
-
-  if old.cashout is null and new.cashout is not null then
-    insert into public.game_history(user_id, kind, details)
-    values (new.user_id, 'crash_cashout',
-      jsonb_build_object('bet', new.bet, 'multiplier', new.cashout, 'win', new.win));
-  end if;
-
-  if not old.done and new.done then
-    insert into public.game_history(user_id, kind, details)
-    values (new.user_id, case when new.cashout is null then 'crash_loss' else 'crash_end' end,
-      jsonb_build_object('bet', new.bet, 'crash_point', new.cp, 'multiplier', new.cashout, 'win', new.win));
-  end if;
-
-  return new;
-end $$;
-
-drop trigger if exists extra_crash_insert_trg on public.crash_games;
-create trigger extra_crash_insert_trg
-after insert on public.crash_games
-for each row execute function public.extra_crash_history();
-
-drop trigger if exists extra_crash_update_trg on public.crash_games;
-create trigger extra_crash_update_trg
-after update of cashout, done on public.crash_games
-for each row execute function public.extra_crash_history();
-
 -- Коллекции, уровень, цепочки достижений и событие недели.
 create or replace function public.api_extra_hub(p jsonb)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
@@ -222,16 +188,15 @@ begin
   from (
     select d.*, case
       when d.code like 'collect_%' then cnt
-      when d.code like 'cases_%' then w.cases
-      else w.streak
+      when d.code = 'friend_1' then (select count(*) from public.friendships f where f.user_id=u and f.status='accepted')
+      else (select count(*) from public.profile_showcase s where s.user_id=u)
     end as progress
     from (values
       ('collect_5','Первый альбом','Найди 5 разных предметов',5,40,1),
       ('collect_25','Коллекционер','Найди 25 разных предметов',25,100,2),
       ('collect_100','Архивариус','Найди 100 разных предметов',100,300,3),
-      ('cases_10','Разогрев','Открой 10 кейсов',10,50,4),
-      ('cases_50','Охотник за дропами','Открой 50 кейсов',50,150,5),
-      ('streak_7','Постоянный','Заходи 7 дней подряд',7,200,6)
+      ('friend_1','Не один','Добавь первого друга',1,75,4),
+      ('showcase_3','На витрине','Выставь три предмета в профиль',3,100,5)
     ) as d(code,title,description,goal,reward_xp,sort_order)
   ) a;
 
@@ -249,9 +214,8 @@ begin
     ('Собиратель',1,'collect_5'),
     ('Коллекционер',2,'collect_25'),
     ('Архивариус',3,'collect_100'),
-    ('Открывашка',4,'cases_10'),
-    ('Мастер кейсов',5,'cases_50'),
-    ('Постоянный',6,'streak_7')
+    ('Друг',4,'friend_1'),
+    ('Витринщик',5,'showcase_3')
   ) t(title,rank,code)
   where t.code = '' or exists(select 1 from public.achievement_claims a where a.user_id=u and a.code=t.code);
 
@@ -308,9 +272,8 @@ begin
       when 'collect_5' then select count(*) into progress_now from public.collection_discoveries where user_id=u; goal_now:=5; reward:=40;
       when 'collect_25' then select count(*) into progress_now from public.collection_discoveries where user_id=u; goal_now:=25; reward:=100;
       when 'collect_100' then select count(*) into progress_now from public.collection_discoveries where user_id=u; goal_now:=100; reward:=300;
-      when 'cases_10' then progress_now:=w.cases; goal_now:=10; reward:=50;
-      when 'cases_50' then progress_now:=w.cases; goal_now:=50; reward:=150;
-      when 'streak_7' then progress_now:=w.streak; goal_now:=7; reward:=200;
+      when 'friend_1' then select count(*) into progress_now from public.friendships where user_id=u and status='accepted'; goal_now:=1; reward:=75;
+      when 'showcase_3' then select count(*) into progress_now from public.profile_showcase where user_id=u; goal_now:=3; reward:=100;
       else raise exception 'bad_code';
     end case;
     if progress_now < goal_now then raise exception 'quest_not_ready'; end if;
@@ -387,9 +350,8 @@ begin
     when 'Собиратель' then 'collect_5'
     when 'Коллекционер' then 'collect_25'
     when 'Архивариус' then 'collect_100'
-    when 'Открывашка' then 'cases_10'
-    when 'Мастер кейсов' then 'cases_50'
-    when 'Постоянный' then 'streak_7'
+    when 'Друг' then 'friend_1'
+    when 'Витринщик' then 'showcase_3'
     else null end;
   if need_code is null then raise exception 'bad_title'; end if;
   if need_code<>'' and not exists(select 1 from public.achievement_claims where user_id=u and code=need_code) then
@@ -495,36 +457,6 @@ begin
   return jsonb_build_object('ok',true);
 end $$;
 
--- Та же серверная рулетка, что и в основной установке, плюс запись результата в журнал.
-create or replace function public.api_roulette(p jsonb)
-returns jsonb language plpgsql security definer set search_path = public as $$
-declare
-  w public.wallets := public.w_get();
-  u uuid := w.user_id;
-  bet bigint := (p->>'bet')::bigint;
-  segs numeric[] := array[0,2,0,1.5,0,3,0.5,0,2,0,10,0];
-  idx int;
-  m numeric;
-  win bigint;
-begin
-  if bet is null or bet < 1 or bet > w.balance then raise exception 'no_money'; end if;
-  perform public.quest_bump(u,'roulette',1);
-  if random()<1.0/120 then
-    insert into public.game_history(user_id,kind,details)
-      values(u,'roulette_return',jsonb_build_object('bet',bet));
-    return jsonb_build_object('rolled',true,'bal',w.balance);
-  end if;
-
-  idx := floor(random()*12)::int;
-  m := segs[idx+1];
-  win := round(bet*m);
-  update public.wallets set balance=balance-bet+win where user_id=u;
-  perform public.add_points(u,win-bet);
-  insert into public.game_history(user_id,kind,details)
-    values(u,'roulette',jsonb_build_object('bet',bet,'multiplier',m,'win',win,'segment',idx));
-  return jsonb_build_object('idx',idx,'mult',m,'win',win,'bal',w.balance-bet+win);
-end $$;
-
 -- Функции API доступны только вошедшим игрокам.
 do $$
 declare f record;
@@ -535,7 +467,7 @@ begin
     where n.nspname='public' and p.proname in (
       'api_extra_hub','api_extra_claim','api_extra_profile','api_extra_showcase',
       'api_extra_set_profile','api_extra_history','api_friends',
-      'api_friend_request','api_friend_answer','api_friend_remove','api_roulette'
+      'api_friend_request','api_friend_answer','api_friend_remove'
     )
   loop
     execute format('revoke all on function %s from public, anon, authenticated',f.sig);
