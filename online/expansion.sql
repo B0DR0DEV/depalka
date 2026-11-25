@@ -181,7 +181,7 @@ declare
   pr public.player_progress;
   cnt int;
   total int;
-  week date := date_trunc('week', now())::date;
+  v_week date := date_trunc('week', now())::date;
   week_cnt int;
   level_no int;
   achievements jsonb;
@@ -201,7 +201,7 @@ begin
   select count(*) into total from public.catalog_items where set <> 'special';
   select count(*) into week_cnt
     from public.collection_discoveries
-    where user_id = u and first_seen >= week and first_seen < week + 7;
+    where user_id = u and first_seen >= v_week and first_seen < v_week + 7;
 
   level_no := floor(sqrt(pr.xp::numeric / 100))::int + 1;
 
@@ -255,7 +255,7 @@ begin
   ) t(title,rank,code)
   where t.code = '' or exists(select 1 from public.achievement_claims a where a.user_id=u and a.code=t.code);
 
-  if extract(week from week)::int % 3 = 0 then
+  if extract(week from v_week)::int % 3 = 0 then
     event_title := 'Неделя коллекционера';
     event_desc := 'Найди 3 разных предмета за эту неделю.';
   elsif extract(week from week)::int % 3 = 1 then
@@ -274,9 +274,9 @@ begin
     'achievements', achievements, 'unlocked_titles', unlocked_titles,
     'showcase', showcase,
     'weekly', jsonb_build_object(
-      'week_start', week, 'title', event_title, 'description', event_desc,
+      'week_start', v_week, 'title', event_title, 'description', event_desc,
       'progress', least(3, week_cnt), 'goal', 3, 'reward_xp', 75,
-      'claimed', exists(select 1 from public.weekly_event_claims x where x.user_id=u and x.week_start=week)
+      'claimed', exists(select 1 from public.weekly_event_claims x where x.user_id=u and x.week_start=v_week)
     )
   );
 end $$;
@@ -297,7 +297,7 @@ begin
 
   if code = 'weekly' then
     select count(*) into progress_now from public.collection_discoveries
-      where user_id=u and first_seen>=week and first_seen<week+7;
+      where user_id=u and first_seen>=v_week and first_seen<v_week+7;
     if progress_now < 3 then raise exception 'quest_not_ready'; end if;
     insert into public.weekly_event_claims(user_id,week_start) values(u,week)
       on conflict do nothing;
@@ -408,7 +408,7 @@ end $$;
 
 create or replace function public.api_extra_history(p jsonb)
 returns jsonb language plpgsql stable security definer set search_path = public as $$
-declare u uuid := public.me(); lim int := greatest(1,least(100,coalesce((p->>'limit')::int,40));
+declare u uuid := public.me(); lim int := greatest(1,least(100,coalesce((p->>'limit')::int,40)));
 begin
   return coalesce((
     select jsonb_agg(jsonb_build_object('id',id,'kind',kind,'details',details,'at',created_at) order by created_at desc)
