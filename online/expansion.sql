@@ -66,9 +66,11 @@ create index if not exists game_history_user_created
 
 -- Существующие предметы тоже считаются уже найденными. Баланс и инвентарь не меняются.
 insert into public.collection_discoveries(user_id, item_id, first_seen)
-select user_id, item_id, min(created_at)
-from public.inventory
-group by user_id, item_id
+select i.user_id, i.item_id, min(i.created_at)
+from public.inventory i
+join public.catalog_items c on c.id = i.item_id
+where c.set <> 'special'
+group by i.user_id, i.item_id
 on conflict (user_id, item_id) do nothing;
 
 insert into public.player_progress(user_id, xp)
@@ -93,23 +95,26 @@ begin
 end $$;
 
 create or replace function public.extra_inventory_insert()
-returns trigger language plpgsql security definer set search_path = public as $$
-declare fresh boolean;
+returns trigger language plpgsql security definer set search_path = public as $
+declare fresh boolean := false; item_set text;
 begin
-  insert into public.collection_discoveries(user_id, item_id)
-  values (new.user_id, new.item_id)
-  on conflict (user_id, item_id) do nothing;
-  fresh := found;
+  select c.set into item_set from public.catalog_items c where c.id = new.item_id;
+  if item_set is distinct from 'special' then
+    insert into public.collection_discoveries(user_id, item_id)
+    values (new.user_id, new.item_id)
+    on conflict (user_id, item_id) do nothing;
+    fresh := found;
 
-  if fresh then
-    insert into public.player_progress(user_id, xp)
-    values (new.user_id, 10)
-    on conflict (user_id) do update
-      set xp = public.player_progress.xp + 10, updated_at = now();
-  else
-    insert into public.player_progress(user_id)
-    values (new.user_id)
-    on conflict (user_id) do nothing;
+    if fresh then
+      insert into public.player_progress(user_id, xp)
+      values (new.user_id, 10)
+      on conflict (user_id) do update
+        set xp = public.player_progress.xp + 10, updated_at = now();
+    else
+      insert into public.player_progress(user_id)
+      values (new.user_id)
+      on conflict (user_id) do nothing;
+    end if;
   end if;
 
   insert into public.game_history(user_id, kind, details)
@@ -117,7 +122,7 @@ begin
     jsonb_build_object('item', new.item_id, 'price', new.price, 'new_discovery', fresh));
 
   return new;
-end $$;
+end $;
 
 create or replace function public.extra_inventory_delete()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -140,7 +145,7 @@ for each row execute function public.extra_inventory_delete();
 
 -- Коллекции, уровень, цепочки достижений и событие недели.
 create or replace function public.api_extra_hub(p jsonb)
-returns jsonb language plpgsql stable security definer set search_path = public as $$
+returns jsonb language plpgsql volatile security definer set search_path = public as $
 declare
   u uuid := public.me();
   w public.wallets;
@@ -163,11 +168,13 @@ begin
   insert into public.player_progress(user_id) values (u) on conflict do nothing;
   select * into pr from public.player_progress where user_id = u;
 
-  select count(*) into cnt from public.collection_discoveries where user_id = u;
+  select count(*) into cnt
+    from public.collection_discoveries d join public.catalog_items c on c.id = d.item_id
+    where d.user_id = u and c.set <> 'special';
   select count(*) into total from public.catalog_items where set <> 'special';
   select count(*) into week_cnt
-    from public.collection_discoveries
-    where user_id = u and first_seen >= v_week and first_seen < v_week + 7;
+    from public.collection_discoveries d join public.catalog_items c on c.id = d.item_id
+    where d.user_id = u and c.set <> 'special' and d.first_seen >= v_week and d.first_seen < v_week + 7;
 
   level_no := floor(sqrt(pr.xp::numeric / 100))::int + 1;
 
@@ -177,7 +184,7 @@ begin
   into discoveries
   from public.collection_discoveries d
   join public.catalog_items c on c.id = d.item_id
-  where d.user_id = u;
+  where d.user_id = u and c.set <> 'special';
 
   select coalesce(jsonb_agg(jsonb_build_object(
     'code', a.code, 'title', a.title, 'description', a.description,
@@ -260,8 +267,9 @@ begin
   if w.user_id is null then raise exception 'no_player'; end if;
 
   if code = 'weekly' then
-    select count(*) into progress_now from public.collection_discoveries
-      where user_id=u and first_seen>=v_week and first_seen<v_week+7;
+    select count(*) into progress_now
+      from public.collection_discoveries d join public.catalog_items c on c.id=d.item_id
+      where d.user_id=u and c.set<>'special' and d.first_seen>=v_week and d.first_seen<v_week+7;
     if progress_now < 3 then raise exception 'quest_not_ready'; end if;
     insert into public.weekly_event_claims(user_id,week_start) values(u,v_week)
       on conflict do nothing;
@@ -269,9 +277,9 @@ begin
     reward := 75;
   else
     case code
-      when 'collect_5' then select count(*) into progress_now from public.collection_discoveries where user_id=u; goal_now:=5; reward:=40;
-      when 'collect_25' then select count(*) into progress_now from public.collection_discoveries where user_id=u; goal_now:=25; reward:=100;
-      when 'collect_100' then select count(*) into progress_now from public.collection_discoveries where user_id=u; goal_now:=100; reward:=300;
+      when 'collect_5' then select count(*) into progress_now from public.collection_discoveries d join public.catalog_items c on c.id=d.item_id where d.user_id=u and c.set<>'special'; goal_now:=5; reward:=40;
+      when 'collect_25' then select count(*) into progress_now from public.collection_discoveries d join public.catalog_items c on c.id=d.item_id where d.user_id=u and c.set<>'special'; goal_now:=25; reward:=100;
+      when 'collect_100' then select count(*) into progress_now from public.collection_discoveries d join public.catalog_items c on c.id=d.item_id where d.user_id=u and c.set<>'special'; goal_now:=100; reward:=300;
       when 'friend_1' then select count(*) into progress_now from public.friendships where user_id=u and status='accepted'; goal_now:=1; reward:=75;
       when 'showcase_3' then select count(*) into progress_now from public.profile_showcase where user_id=u; goal_now:=3; reward:=100;
       else raise exception 'bad_code';
@@ -301,7 +309,7 @@ begin
   select * into w from public.wallets where user_id=target;
   if w.user_id is null then raise exception 'no_player'; end if;
   select * into pr from public.player_progress where user_id=target;
-  select count(*) into cnt from public.collection_discoveries where user_id=target;
+  select count(*) into cnt from public.collection_discoveries d join public.catalog_items c on c.id=d.item_id where d.user_id=target and c.set<>'special';
   select coalesce(jsonb_agg(jsonb_build_object(
     'slot',s.slot,'id',i.id,'item',i.item_id,'price',i.price
   ) order by s.slot),'[]'::jsonb)
