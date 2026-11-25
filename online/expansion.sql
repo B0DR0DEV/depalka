@@ -124,24 +124,13 @@ begin
   return new;
 end $;
 
-create or replace function public.extra_inventory_delete()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  insert into public.game_history(user_id, kind, details)
-  values (old.user_id, 'item_removed',
-    jsonb_build_object('item', old.item_id, 'price', old.price));
-  return old;
-end $$;
-
 drop trigger if exists extra_inventory_insert_trg on public.inventory;
 create trigger extra_inventory_insert_trg
 after insert on public.inventory
 for each row execute function public.extra_inventory_insert();
 
 drop trigger if exists extra_inventory_delete_trg on public.inventory;
-create trigger extra_inventory_delete_trg
-after delete on public.inventory
-for each row execute function public.extra_inventory_delete();
+drop function if exists public.extra_inventory_delete();
 
 -- Коллекции, уровень, цепочки достижений и событие недели.
 create or replace function public.api_extra_hub(p jsonb)
