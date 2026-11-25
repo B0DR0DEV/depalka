@@ -99,6 +99,19 @@ document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener(
  document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b===button));
  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===button.dataset.tab));
 }));
+const search=document.getElementById('collectionSearch');
+const cards=[...document.querySelectorAll('.collectible')];
+let activeFilter='all';
+function filterCollection(){
+ const q=(search?.value||'').trim().toLowerCase();let visible=0;
+ cards.forEach(card=>{const ok=(activeFilter==='all'||card.dataset.category===activeFilter)&&card.innerText.toLowerCase().includes(q);card.style.display=ok?'':'none';if(ok)visible++;});
+ document.getElementById('collectionEmpty').style.display=visible?'none':'block';
+}
+search?.addEventListener('input',filterCollection);
+document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{
+ document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b===button));
+ activeFilter=button.dataset.filter;filterCollection();
+}));
 </script>
 </body>
 </html>
