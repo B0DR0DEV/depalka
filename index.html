@@ -348,7 +348,7 @@ html,body{overflow-x:hidden;max-width:100%}
 
   <!-- WHEEL -->
   <div class="pg" id="pg-wheel">
-    <div class="seg" data-seg="games"><button data-v="up">⬆️ Апгрейд</button><button data-v="crash">🚀 Краш</button><button data-v="ct">📜 Контракт</button><button data-v="wheel">🎡 Рулетка</button></div>
+    <div class="seg" data-seg="games"><button data-v="up">⬆️ Апгрейд</button><button data-v="crash">🚀 Краш</button><button data-v="ct">📜 Контракт</button><button data-v="wheel">🎡 Рулетка</button><button data-v="tower">🏰 Башня</button></div>
     <div class="sub" data-sub="games:up">
       <div class="hint" style="margin-top:0">Ставишь свои мемы или скины и выбираешь, во сколько раз дороже скин CS2 хочешь получить, или целишься в конкретный. Чем дороже цель, тем меньше шанс. Не повезло — ставка сгорает.</div>
       <div class="upwrap">
@@ -362,7 +362,7 @@ html,body{overflow-x:hidden;max-width:100%}
     <div class="sub" data-sub="games:crash">
       <div class="crashbox"><canvas id="crashCv" width="1000" height="560"></canvas><div class="crashm" id="crashM">×1.00</div><div class="crashst" id="crashSt">Делай ставку</div></div>
       <div class="chips" id="crashHist" style="margin:10px 0 4px"></div>
-      <div class="uplbl" style="margin-top:6px">Ставка</div><div class="bets" id="crashBets" style="margin-top:6px"></div>
+      <div class="uplbl" style="margin-top:6px">Ставка</div><div class="bets" id="crashBets" style="margin-top:6px"></div><div class="row" id="crashCustomBet" style="margin-top:6px"><input type="number" id="crashBetInput" min="1" step="1" inputmode="numeric" placeholder="Своя сумма" style="flex:1;min-width:0"><button class="btn" id="crashBetApply">Применить</button></div>
       <div class="uplbl">Автовывод</div><div class="chips" id="crashAuto" style="margin:6px 0 4px"></div>
       <button class="bigbtn hot" id="crashGo" style="width:100%;margin-top:8px">Запустить ракету</button>
     </div>
@@ -374,10 +374,26 @@ html,body{overflow-x:hidden;max-width:100%}
       <div class="openrow"><button class="btn" id="ctAuto" style="height:58px">Авто: 10 дешёвых</button><button class="bigbtn" id="ctGo">Подписать контракт</button></div>
       <div class="uplbl">Твои мемы этой редкости</div><div class="igrid" id="ctInv" style="margin-top:8px"></div>
     </div>
+    <div class="sub" data-sub="games:tower">
+      <h2 style="margin-top:0">🏰 Башня удачи</h2>
+      <div class="hint" style="margin-top:0">На каждом этаже выбери одну из трёх дверей. Две ведут выше, одна завершает попытку. После успешного этажа можешь забрать накопленный выигрыш.</div>
+      <div class="stat three"><div><b id="towerFloor">0 / 10</b><span>этаж</span></div><div><b id="towerMult">×1.00</b><span>множитель</span></div><div><b id="towerWin">0</b><span>можно забрать 🪙</span></div></div>
+      <div class="box">
+        <div class="uplbl">Ставка</div>
+        <div class="row"><input type="number" id="towerBet" min="1" step="1" inputmode="numeric" placeholder="Сумма ставки" style="flex:1;min-width:0"><button class="btn" id="towerStart">Начать</button></div>
+        <div class="hint" id="towerStatus" style="margin:8px 0 10px">Выбери ставку и начни подъём.</div>
+        <div class="row" id="towerDoors" style="gap:8px">
+          <button class="bigbtn" data-door="0" disabled>🚪 Дверь 1</button><button class="bigbtn" data-door="1" disabled>🚪 Дверь 2</button><button class="bigbtn" data-door="2" disabled>🚪 Дверь 3</button>
+        </div>
+        <button class="bigbtn" id="towerCashout" style="width:100%;margin-top:10px" disabled>Забрать выигрыш</button>
+      </div>
+      <div class="hint">Башня доступна в песочнице. Онлайн-режим не затрагивается: для честной игры там нужна отдельная серверная проверка результата.</div>
+    </div>
     <div class="sub" data-sub="games:wheel">
     <h2 style="margin-top:0">Рулетка</h2>
     <div class="wheelbox"><div class="pointer"></div><div id="wheelWrap"><canvas id="wheel" width="760" height="760"></canvas></div><div class="hub">ДЕП</div></div>
     <div class="bets" id="bets"></div>
+    <div class="row" id="rouletteCustomBet" style="margin-top:-4px"><input type="number" id="rouletteBetInput" min="1" step="1" inputmode="numeric" placeholder="Своя сумма" style="flex:1;min-width:0"><button class="btn" id="rouletteBetApply">Применить</button></div>
     <button class="bigbtn hot" id="spin" style="width:100%">Депнуть</button>
     <ul class="feed" id="feed"></ul>
     </div>
@@ -720,7 +736,9 @@ function renderPot(){const L=$('potList'),tot=potTotal();
   $('potSpin').textContent=S.pot.length===1&&!S.pot[0].bot?'Добавь соперника или бота':'Крутить банк';
   const n=P().inv.filter(x=>SEL.has(x.uid)).length;$('potItems').textContent=n?`Закинуть ${n} мем(ов)`:'Закинуть мемов'}
 const BETS=[50,100,250,500,'ВСЁ'];
-function renderBets(){const b=$('bets');b.innerHTML='';BETS.forEach(v=>{const x=document.createElement('button');x.textContent=v;if(S.bet===v)x.className='sel';x.onclick=()=>{S.bet=v;save();renderBets()};b.appendChild(x)})}
+function renderBets(){const b=$('bets');b.innerHTML='';BETS.forEach(v=>{const x=document.createElement('button');x.textContent=v;if(S.bet===v)x.className='sel';x.onclick=()=>{S.bet=v;save();renderBets()};b.appendChild(x)});
+  const input=$('rouletteBetInput');if(input)input.value=typeof S.bet==='number'&&!BETS.includes(S.bet)?S.bet:''}
+$('rouletteBetApply').onclick=()=>{const v=Math.floor(+$('rouletteBetInput').value);if(!Number.isSafeInteger(v)||v<1)return toast('Введи сумму больше нуля');if(v>P().bal)return toast('На балансе недостаточно монет');S.bet=v;save();renderBets();toast('Своя ставка установлена: '+fmt(v)+' 🪙')};
 const PERKS={unlimited:{t:'Безлимит навсегда',d:'Бесплатный кейс без лимита и с ×10',price:'30 ₽',emo:'♾️'},
   secretcase:{t:'Секретный кейс',d:'Скрытый кейс: только тайные и легенды из всех коллекций',price:'20 ₽',emo:'🗝️'},
   secretskin:{t:'Секретный скин',d:'«★ Золотой Karambit | Депость» сразу в инвентарь. Есть только у донатеров',price:'10 ₽',emo:'🔪'}};
@@ -749,7 +767,7 @@ function renderMore(){renderPacks();$('adminBtn').style.display=ON()&&SRV.admin?
     d.querySelector('.ava').onclick=()=>{avaFor=i;$('avaFile').value='';$('avaFile').click()};
     const x=d.querySelector('.del');if(x)x.onclick=()=>{S.players.splice(i,1);S.pot=S.pot.filter(e=>e.pid!==p.id);if(S.active>=S.players.length)S.active=0;save();render()};pl.appendChild(d)})}
 function render(){if(!S.players.length){showWelcome();return}$('welcome').classList.remove('show');if(S.active>=S.players.length)S.active=0;renderHdr();renderLive();
-  if(page==='cases')renderCases();if(page==='case')renderCase();if(page==='inv')renderInv();applySeg();const sg=S.meta.seg||{};if(page==='battle'){renderPot();renderCB();renderOnline()}if(page==='top')renderTop();if(page==='wheel'){const g=sg.games||'up';if(g==='wheel')renderBets();if(g==='up')renderUp();if(g==='crash')renderCrash();if(g==='ct')renderCt()}if(page==='more')renderMore()}
+  if(page==='cases')renderCases();if(page==='case')renderCase();if(page==='inv')renderInv();applySeg();const sg=S.meta.seg||{};if(page==='battle'){renderPot();renderCB();renderOnline()}if(page==='top')renderTop();if(page==='wheel'){const g=sg.games||'up';if(g==='wheel')renderBets();if(g==='up')renderUp();if(g==='crash')renderCrash();if(g==='ct')renderCt();if(g==='tower')towerRender()}if(page==='more')renderMore()}
 
 /* ===== header actions ===== */
 function playerSheet(){
@@ -891,7 +909,7 @@ $('spin').onclick=async()=>{
   const now=Date.now();stamps=stamps.filter(t=>now-t<15000);stamps.push(now);
   if(stamps.length>=7){stamps=[];found('shawa');cool=true;let t=8;const b=$('spin');b.disabled=true;const tick=()=>{b.textContent=`ушёл за шаурмой… ${t}`;if(t--<=0){cool=false;b.disabled=false;b.textContent='Депнуть';return}setTimeout(tick,1000)};tick();return}
   if(new Date().getHours()<5&&!nightShown){nightShown=true;found('night');overlay({vis:emojiOv('😴'),bare:true,title:'НОЧНОЙ КРУПЬЕ',text:`Крупье в пижаме. Зевает. Говорит: «${p.name}, ты время видел вообще?» Но раздаёт.`})}
-  const allIn=S.bet==='ВСЁ',bet=allIn?p.bal:Math.min(S.bet,p.bal);let srv=null;
+  const allIn=S.bet==='ВСЁ',bet=allIn?p.bal:+S.bet;if(bet<=0)return toast('Введи ставку больше нуля');if(bet>p.bal)return toast('На балансе недостаточно монет');let srv=null;
   if(ON()){spinning=true;$('spin').disabled=true;try{srv=await rpc('roulette',{bet})}catch(e){spinning=false;$('spin').disabled=false;return toast(errText(e))}}
   add(p,-bet);spinning=true;$('spin').disabled=true;renderHdr();haptic('medium');
   if(srv?srv.rolled:Math.random()<1/120){const w=$('wheelWrap');w.classList.add('away');setTimeout(()=>{add(p,bet);found('rolled');log(`<b>${esc(p.name)}</b> депнул ${fmt(bet)}, но колесо укатилось. Деп вернули.`);
@@ -1063,10 +1081,12 @@ function crashPoint(){const u=Math.random();return Math.min(1000,Math.max(1,Math
 function renderCrash(){CR.hist=(S.meta.crashHist||[]).slice(0,12);
   $('crashHist').innerHTML=CR.hist.map(v=>`<span class="hchip" style="color:${v>=2?'var(--green)':v>=1.5?'var(--gold)':'#ff6b81'}">×${v.toFixed(2)}</span>`).join('')||'<span class="hint" style="margin:0">Тут будет история взлётов</span>';
   $('crashBets').innerHTML='';CRB.forEach(v=>{const b=document.createElement('button');b.textContent=v;if(CR.bet===v)b.className='sel';b.onclick=()=>{if(CR.state==='fly'&&!CR.cashed)return;CR.bet=v;renderCrash()};$('crashBets').appendChild(b)});
+  $('crashBetInput').value=typeof CR.bet==='number'&&!CRB.includes(CR.bet)?CR.bet:'';
   $('crashAuto').innerHTML=CRA.map(v=>`<button class="chip${CR.auto===v?' on':''}" data-a="${v}">${v?'×'+v:'Выкл'}</button>`).join('');
   $('crashAuto').querySelectorAll('button').forEach(b=>b.onclick=()=>{CR.auto=+b.dataset.a;renderCrash()});
   const g=$('crashGo');if(CR.state==='fly'&&!CR.cashed){g.textContent=`Забрать ${fmt(CR.stake*CR.m)}`;g.className='bigbtn'}else{g.className='bigbtn hot';g.textContent=CR.state==='fly'?'Ждём взрыва…':'Запустить ракету'}
   g.disabled=CR.state==='fly'&&!!CR.cashed;drawCrash()}
+$('crashBetApply').onclick=()=>{if(CR.state==='fly')return toast('Нельзя менять ставку во время раунда');const v=Math.floor(+$('crashBetInput').value);if(!Number.isSafeInteger(v)||v<1)return toast('Введи сумму больше нуля');if(v>P().bal)return toast('На балансе недостаточно монет');CR.bet=v;renderCrash();toast('Своя ставка установлена: '+fmt(v)+' 🪙')};
 function drawCrash(){const cv=$('crashCv'),c=cv.getContext('2d'),W=cv.width,H=cv.height;c.clearRect(0,0,W,H);
   const t=CR.state==='idle'?0:CR.tNow||0,maxT=Math.max(8,t*1.15),maxM=Math.max(2,CR.m*1.2),X=x=>40+x/maxT*(W-80),Y=m=>H-40-(m-1)/(maxM-1)*(H-160);
   c.strokeStyle='rgba(255,255,255,.06)';c.lineWidth=2;for(let i=1;i<=4;i++){const y=H-40-i*(H-160)/4;c.beginPath();c.moveTo(40,y);c.lineTo(W-40,y);c.stroke()}
@@ -1096,13 +1116,56 @@ function crashBoom(){CR.state='boom';clearInterval(CR.poll);CR.gid=null;const p=
   else $('crashSt').textContent=`💥 Взорвалась на ×${CR.cp.toFixed(2)}. Ты успел забрать ${fmt(CR.cashed)} 🪙`;
   save();renderHdr();drawCrash();setTimeout(()=>{CR.state='idle';renderCrash()},1200);renderCrash()}
 $('crashGo').onclick=async()=>{if(CR.state==='fly'){crashCash();return}if(CR.state==='boom'||CR.busy)return;
-  const p=P(),stake=CR.bet==='ВСЁ'?p.bal:Math.min(CR.bet,p.bal);if(stake<=0)return toast('Монет нет. Открой бесплатный кейс');
+  const p=P(),stake=CR.bet==='ВСЁ'?p.bal:+CR.bet;if(stake<=0)return toast('Монет нет. Открой бесплатный кейс');if(stake>p.bal)return toast('На балансе недостаточно монет');
   if(ON()){CR.busy=true;let r;try{r=await rpc('crash_start',{bet:stake,auto:CR.auto})}catch(e){CR.busy=false;return toast(errText(e))}CR.busy=false;
     CR.gid=r.id;p.bal=Math.max(0,+r.bal-stagedCoins());CR.cp=Infinity;clearInterval(CR.poll);CR.poll=setInterval(crashPoll,450)}
   else{p.bal-=stake;CR.cp=crashPoint()}
   CR.stake=stake;CR.cashed=0;CR.cashing=false;CR.m=1;CR.state='fly';CR.t0=performance.now();CR.tNow=0;save();renderHdr();haptic('medium');
   $('crashM').className='crashm';$('crashSt').textContent=`Ставка ${fmt(stake)} 🪙${CR.auto?` · автовывод ×${CR.auto}`:''}`;renderCrash();requestAnimationFrame(crashTick)};
 
+/* ===== БАШНЯ УДАЧИ ===== */
+const TOWER_MULT=[1.35,1.8,2.4,3.2,4.4,6.2,8.8,12.5,18,27];
+const TOWER={active:false,bet:0,floor:0,trap:-1,busy:false};
+function towerRender(){
+  $('towerFloor').textContent=TOWER.floor+' / 10';
+  const m=TOWER.floor?TOWER_MULT[TOWER.floor-1]:1;
+  $('towerMult').textContent='×'+m.toFixed(2);
+  $('towerWin').textContent=TOWER.floor?fmt(Math.floor(TOWER.bet*m)):'0';
+  $('towerStatus').textContent=TOWER.active?'Выбери дверь на '+(TOWER.floor+1)+'-м этаже.':'Выбери ставку и начни подъём.';
+  $('towerStart').disabled=TOWER.active||TOWER.busy;
+  $('towerBet').disabled=TOWER.active||TOWER.busy;
+  $('towerDoors').querySelectorAll('[data-door]').forEach(b=>b.disabled=!TOWER.active||TOWER.busy);
+  $('towerCashout').disabled=!TOWER.active||TOWER.floor<1||TOWER.busy;
+  $('towerCashout').textContent=TOWER.floor?'Забрать '+fmt(Math.floor(TOWER.bet*m))+' 🪙':'Забрать выигрыш';
+}
+function towerFinish(win){
+  const p=P(),amount=win?Math.floor(TOWER.bet*TOWER_MULT[TOWER.floor-1]):0;
+  TOWER.active=false;TOWER.busy=false;
+  if(win){p.bal+=amount;SND.coin();toast('Забрано '+fmt(amount)+' 🪙')}
+  else{SND.lose();toast('Ловушка! Попытка завершена.')}
+  save();renderHdr();towerRender();
+}
+$('towerStart').onclick=()=>{
+  if(ON())return toast('Башня пока доступна только в песочнице');
+  if(TOWER.active||TOWER.busy)return;
+  const p=P(),bet=Math.floor(+$('towerBet').value);
+  if(!Number.isSafeInteger(bet)||bet<1)return toast('Введи ставку больше нуля');
+  if(bet>p.bal)return toast('На балансе недостаточно монет');
+  p.bal-=bet;TOWER.bet=bet;TOWER.floor=0;TOWER.trap=Math.floor(Math.random()*3);TOWER.active=true;
+  save();renderHdr();towerRender();toast('Подъём начался');
+};
+$('towerDoors').querySelectorAll('[data-door]').forEach(b=>b.onclick=()=>{
+  if(!TOWER.active||TOWER.busy)return;
+  TOWER.busy=true;towerRender();
+  const door=+b.dataset.door,trap=TOWER.trap;
+  setTimeout(()=>{
+    if(door===trap){TOWER.floor=0;towerFinish(false);return}
+    TOWER.floor++;
+    if(TOWER.floor>=10){towerFinish(true);overlay({vis:emojiOv('🏆'),bare:true,title:'ВЕРШИНА!',text:'Все 10 этажей пройдены. Ставка возвращена с множителем ×'+TOWER_MULT[9].toFixed(2)+'.'})}
+    else{TOWER.trap=Math.floor(Math.random()*3);TOWER.busy=false;SND.pop();towerRender()}
+  },260);
+});
+$('towerCashout').onclick=()=>{if(!TOWER.active||TOWER.floor<1||TOWER.busy)return;towerFinish(true)};
 /* ===== КОНТРАКТ ===== */
 let ctBusy=false,ctR=0,ctSel=[];
 function ctPool(){const p=P();return p.inv.filter(x=>{const it=itemById(x.itemId);return it&&it.r===ctR&&it.set!=='special'})}
