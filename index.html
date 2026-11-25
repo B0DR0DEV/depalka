@@ -417,6 +417,16 @@ html,body{overflow-x:hidden;max-width:100%}
     <h2 style="margin-top:4px">Режим</h2>
     <div class="seg" id="modeSeg"><button data-mode="online">🌐 Онлайн</button><button data-mode="sandbox">🏖 Песочница</button></div>
     <div class="hint" id="modeHint" style="margin-top:-6px"></div>
+    <h2>🌟 Депость+</h2>
+    <div class="row" id="extraMenu" style="margin:0 0 14px">
+      <button class="btn" id="extraCollection">📚 Коллекция</button>
+      <button class="btn" id="extraProgress">⭐ Прогресс</button>
+      <button class="btn" id="extraAchievements">🎖 Достижения</button>
+      <button class="btn" id="extraWeekly">🗓 Неделя</button>
+      <button class="btn" id="extraHistory">🕘 История</button>
+      <button class="btn" id="extraFriends">👥 Друзья</button>
+      <button class="btn" id="extraShowcase">🏆 Витрина</button>
+    </div>
     <h2>💎 Донат</h2>
     <div class="plist" id="perkList"></div>
     <div class="row" style="margin-top:10px"><input type="text" id="promo" placeholder="Промокод, например DEP-XXXX-XXXX" maxlength="20" autocomplete="off" style="flex:1;text-transform:uppercase"><button class="btn acc" id="promoBtn">Активировать</button></div>
@@ -533,7 +543,14 @@ let MODE='online';try{MODE=localStorage.getItem('depost_mode')||'online'}catch(e
 if(!ONLINE.url)MODE='sandbox';
 const ON=()=>MODE==='online';
 let S=ON()?SO:SL;
-const save=()=>{try{localStorage.setItem('deport_v4',JSON.stringify(SL));localStorage.setItem('deport_on1',JSON.stringify(SO))}catch(e){}};
+const save=()=>{try{
+  SL.meta.extra=SL.meta.extra||{discoveries:{},xp:0};
+  const ex=SL.meta.extra;ex.discoveries=ex.discoveries||{};ex.xp=+ex.xp||0;
+  SL.players.forEach(pl=>(pl.inv||[]).forEach(it=>{
+    const id=it.itemId;if(id&&!ex.discoveries[id]){ex.discoveries[id]=Date.now();ex.xp+=10}
+  }));
+  localStorage.setItem('deport_v4',JSON.stringify(SL));localStorage.setItem('deport_on1',JSON.stringify(SO))
+}catch(e){}};
 const stagedCoins=()=>ON()?S.pot.filter(e=>!e.bot).reduce((s,e)=>s+(e.coins||0),0):0;
 const P=()=>S.players[S.active]||S.players[0];
 const pById=id=>S.players.find(p=>p.id===id);
@@ -1411,14 +1428,18 @@ $('topTile').onclick=()=>go('top');$('topBack').onclick=()=>go('cases');
 /* --- профиль игрока с витриной --- */
 async function openProfile(uid){if(!onlineReady||!uid)return toast('Онлайн не подключён');sheet('<div class="hint">Загружаю…</div>');
   let d;try{d=await rpc('profile',{user:uid})}catch(e){return sheet(`<div class="hint">${esc(errText(e))}</div>`)}
-  const me=uid===DB.uid,show=d.inv.slice(0,3);
-  sheet(`<div class="row" style="gap:12px;align-items:center;flex-wrap:nowrap"><div class="ava" style="width:58px;height:58px;font-size:26px;flex:none;background:${esc(d.color||'#7565ff')}">${esc((d.name||'?')[0])}</div><div style="min-width:0"><h3 style="margin:0">${esc(d.name)}${me?' <span class="tag">ТЫ</span>':''}</h3><div class="hint" style="margin:2px 0 0">${d.crowns?'👑'.repeat(Math.min(5,d.crowns))+' ':''}🔥 серия ${d.streak} · 🥚 пасхалок ${d.eggs}</div></div></div>
+  let xpProfile=null;try{xpProfile=await rpc('extra_profile',{user:uid})}catch(e){}
+  const me=uid===DB.uid,show=xpProfile&&xpProfile.showcase&&xpProfile.showcase.length?xpProfile.showcase:d.inv.slice(0,3);
+  sheet(`<div class="row" style="gap:12px;align-items:center;flex-wrap:nowrap"><div class="ava" style="width:58px;height:58px;font-size:26px;flex:none;background:${esc(d.color||'#7565ff')}">${esc((d.name||'?')[0])}</div><div style="min-width:0"><h3 style="margin:0">${esc(d.name)}${me?' <span class="tag">ТЫ</span>':''}</h3><div class="hint" style="margin:2px 0 0">${xpProfile?esc(xpProfile.title)+' · ⭐ уровень '+xpProfile.level+' · ':''}${d.crowns?'👑'.repeat(Math.min(5,d.crowns))+' ':''}🔥 серия ${d.streak} · 🥚 пасхалок ${d.eggs}</div></div></div>
     <div class="stat three" style="margin-top:12px"><div><b>${fmtK(d.points)}</b><span>очки сезона</span></div><div><b>${fmtK(d.wealth)}</b><span>богатство</span></div><div><b>${fmt(d.cases)}</b><span>кейсов</span></div></div>
     <div class="uplbl">🏆 Витрина</div><div class="igrid" style="margin-top:6px">${show.map(x=>icard(itemOr(x.item),{price:x.price})).join('')||'<div class="hint" style="grid-column:1/-1">Пусто</div>'}</div>
     ${d.best_item?`<div class="hint">Лучший дроп за всё время: «${esc(itemOr(d.best_item).name)}» за ${fmt(d.best_price)} 🪙</div>`:''}
-    ${me?'<button class="btn" id="prTrades" style="width:100%;margin-top:10px">🤝 Мои обмены</button>':'<button class="bigbtn" id="prTrade" style="width:100%;margin-top:12px">🤝 Предложить обмен</button>'}
+    ${me?'<button class="btn" id="prTrades" style="width:100%;margin-top:10px">🤝 Мои обмены</button>':'<div class="row" style="margin-top:10px"><button class="btn" id="prFriend" style="flex:1">➕ В друзья</button><button class="bigbtn" id="prTrade" style="flex:1">🤝 Обмен</button></div>'}
     ${d.inv.length>3?`<div class="uplbl" style="margin-top:14px">Ещё в инвентаре</div><div class="igrid" style="margin-top:6px">${d.inv.slice(3).map(x=>icard(itemOr(x.item),{price:x.price,mini:true})).join('')}</div>`:''}`);
-  if(me)$('prTrades').onclick=tradesSheet;else $('prTrade').onclick=()=>{if(!ON())return toast('Обмены — только в онлайн-режиме');tradeCompose(d)}}
+  if(me)$('prTrades').onclick=tradesSheet;else{
+    $('prTrade').onclick=()=>{if(!ON())return toast('Обмены — только в онлайн-режиме');tradeCompose(d)};
+    $('prFriend').onclick=async()=>{try{const r=await rpc('friend_request',{user:uid});toast(r.status==='accepted'?'Вы уже друзья':'Заявка отправлена')}catch(e){toast(errText(e))}}
+  }}
 $('myProfile').onclick=()=>openProfile(DB&&DB.uid);
 
 /* --- обмены между друзьями --- */
@@ -1456,6 +1477,99 @@ async function tradesSheet(){if(!onlineReady)return toast('Онлайн не п�
   $('sheet').querySelectorAll('[data-td]').forEach(b=>b.onclick=()=>act(b.dataset.td,{accept:false}));
   $('sheet').querySelectorAll('[data-tc]').forEach(b=>b.onclick=()=>act(b.dataset.tc,{cancel:true}))}
 $('tradesBtn').onclick=tradesSheet;
+
+/* ===== ДЕПОСТЬ+: коллекция, прогресс, достижения, друзья и история ===== */
+function extraLocalData(){
+  const x=SL.meta.extra||{discoveries:{},xp:0},ids=Object.keys(x.discoveries||{}),items=ids.map(item=>({item,name:itemOr(item).name,rarity:itemOr(item).r,set:itemOr(item).set,first_seen:new Date(x.discoveries[item]).toISOString()}));
+  const p=P(),total=ALLITEMS().filter(it=>it.set!=='special').length,cnt=ids.length;
+  const ach=[
+    ['collect_5','Первый альбом','Найди 5 разных предметов',5,40,cnt],
+    ['collect_25','Коллекционер','Найди 25 разных предметов',25,100,cnt],
+    ['collect_100','Архивариус','Найди 100 разных предметов',100,300,cnt],
+    ['cases_10','Разогрев','Открой 10 кейсов',10,50,p.cases||0],
+    ['cases_50','Охотник за дропами','Открой 50 кейсов',50,150,p.cases||0],
+    ['streak_7','Постоянный','Заходи 7 дней подряд',7,200,0]
+  ].map(a=>({code:a[0],title:a[1],description:a[2],goal:a[3],reward_xp:a[4],progress:Math.min(a[3],a[5]),claimed:false}));
+  const level=Math.floor(Math.sqrt((x.xp||0)/100))+1;
+  return {xp:x.xp||0,level,title:'Новичок',frame:'base',
+    xp_current:(x.xp||0)-((level-1)*(level-1)*100),xp_next:(level*level*100)-((level-1)*(level-1)*100),
+    collection_count:cnt,collection_total:total,collection:items,achievements:ach,unlocked_titles:['Новичок'],
+    showcase:(p.inv||[]).slice(0,3).map((it,i)=>({slot:i+1,id:it.uid,item:it.itemId,price:it.price})),
+    weekly:{title:'Коллекционная неделя',description:'Найди новые предметы, чтобы пополнять альбом.',progress:0,goal:3,reward_xp:75,claimed:false}};
+}
+async function extraGetHub(){if(ON()){if(!onlineReady)throw new Error('Онлайн не подключён');return await rpc('extra_hub',{})}return extraLocalData()}
+const extraHistoryText=x=>{
+  const d=x.details||{},names={item_get:'Получен предмет',item_removed:'Предмет покинул инвентарь',crash_start:'Запуск краша',crash_cashout:'Вывод в краше',crash_loss:'Проигрыш в краше',crash_end:'Конец краша',roulette:'Рулетка',roulette_return:'Рулетка: возврат',cases_opened:'Открытие кейсов'};
+  const more=d.item?' · '+itemOr(d.item).name:d.bet?' · ставка '+fmt(d.bet)+' 🪙':'';
+  const win=d.win!=null?' · результат '+fmt(d.win)+' 🪙':'';
+  const mult=d.multiplier!=null?' · ×'+Number(d.multiplier).toFixed(2):'';
+  const cnt=d.count?' · '+d.count+' шт.':'';
+  return (names[x.kind]||x.kind)+more+mult+win+cnt;
+};
+function extraMissingNotice(){
+  return sheet('<h3>🌟 Депость+</h3><div class="hint">Для онлайн-функций сначала нужно применить дополнительную SQL-миграцию. Она добавляет таблицы и функции, не сбрасывая баланс и инвентарь.</div><div class="hint">Файл: <b>online/expansion.sql</b> в рабочей ветке проекта.</div>');
+}
+async function extraCollectionSheet(){
+  let h;try{h=await extraGetHub()}catch(e){return extraMissingNotice()}
+  const found=new Set((h.collection||[]).map(x=>x.item));
+  const list=ALLITEMS().filter(it=>it&&it.set!=='special').sort((a,b)=>b.r-a.r||a.name.localeCompare(b.name));
+  const cards=list.map(it=>found.has(it.id)?icard(it):'<div class="icard" style="opacity:.42;--rc:'+R[it.r].c+'"><div class="pic"><span class="emo">🔒</span></div><div class="bar"></div><div class="meta"><div class="nm">Не найдено</div><div class="ch">'+R[it.r].n+'</div></div></div>').join('');
+  sheet('<h3>📚 Коллекционная книга</h3><div class="stat three"><div><b>'+h.collection_count+'</b><span>найдено</span></div><div><b>'+h.collection_total+'</b><span>в каталоге</span></div><div><b>'+(h.collection_total?Math.floor(h.collection_count/h.collection_total*100):0)+'%</b><span>собрано</span></div></div><div class="hint">Найденные предметы остаются в альбоме даже после продажи или обмена.</div><div class="igrid">'+(cards||'<div class="hint">Каталог пока загружается.</div>')+'</div>');
+}
+async function extraProgressSheet(){
+  let h;try{h=await extraGetHub()}catch(e){return extraMissingNotice()}
+  const titles=h.unlocked_titles||['Новичок'],frame=h.frame||'base';
+  const opt=titles.map(t=>'<option value="'+esc(t)+'" '+(t===h.title?'selected':'')+'>'+esc(t)+'</option>').join('');
+  sheet('<h3>⭐ Прогресс профиля</h3><div class="stat"><div><b>Уровень '+h.level+'</b><span>твой уровень</span></div><div><b>'+fmt(h.xp)+' XP</b><span>опыт</span></div></div><div class="qbar"><i style="width:'+Math.min(100,Math.floor(h.xp_current/Math.max(1,h.xp_next)*100))+'%"></i></div><div class="hint">'+fmt(h.xp_current)+' / '+fmt(h.xp_next)+' XP до следующего уровня</div><div class="uplbl">Титул</div><select id="extraTitle" style="width:100%">'+opt+'</select><div class="uplbl" style="margin-top:12px">Рамка</div><select id="extraFrame" style="width:100%"><option value="base">Обычная</option><option value="violet" '+(frame==='violet'?'selected':'')+'>'+(titles.includes('Коллекционер')?'Фиолетовая':'Фиолетовая 🔒')+'</option><option value="gold" '+(frame==='gold'?'selected':'')+'>'+(titles.includes('Архивариус')?'Золотая':'Золотая 🔒')+'</option></select><button class="bigbtn" id="extraSaveProfile" style="width:100%;margin-top:12px">Сохранить оформление</button><div class="hint">Новые предметы дают +10 XP. За достижения можно открыть дополнительные титулы и рамки.</div>');
+  $('extraSaveProfile').onclick=async()=>{if(!ON())return toast('Оформление профиля синхронизируется в онлайне');try{await rpc('extra_set_profile',{title:$('extraTitle').value,frame:$('extraFrame').value});toast('Оформление сохранено');extraProgressSheet()}catch(e){toast(errText(e))}};
+}
+async function extraAchievementsSheet(){
+  let h;try{h=await extraGetHub()}catch(e){return extraMissingNotice()}
+  sheet('<h3>🎖 Достижения</h3><div class="plist">'+(h.achievements||[]).map(a=>'<div class="prow"><div style="flex:1;min-width:0"><b>'+esc(a.title)+'</b><div class="hint" style="margin:2px 0">'+esc(a.description)+'</div><div class="qbar"><i style="width:'+Math.min(100,a.progress/Math.max(1,a.goal)*100)+'%"></i></div><div class="hint" style="margin:0">'+fmt(a.progress)+' / '+fmt(a.goal)+' · +'+a.reward_xp+' XP</div></div>'+(a.claimed?'<span class="tag">ГОТОВО</span>':a.progress>=a.goal?'<button class="btn acc" data-ach="'+esc(a.code)+'">Забрать</button>':'<span class="hint" style="margin:0">В процессе</span>')+'</div>').join('')+'</div>');
+  $('sheet').querySelectorAll('[data-ach]').forEach(b=>b.onclick=async()=>{try{if(!ON())return toast('Награды синхронизируются в онлайне');await rpc('extra_claim',{code:b.dataset.ach});SND.win();extraAchievementsSheet()}catch(e){toast(errText(e))}});
+}
+async function extraWeeklySheet(){
+  let h;try{h=await extraGetHub()}catch(e){return extraMissingNotice()}
+  const w=h.weekly||{};
+  sheet('<h3>🗓 '+esc(w.title||'Событие недели')+'</h3><div class="box"><b>'+esc(w.description||'Выполняй недельное задание.')+'</b><div class="qbar"><i style="width:'+Math.min(100,(w.progress||0)/Math.max(1,w.goal||3)*100)+'%"></i></div><div class="hint" style="margin:0">'+(w.progress||0)+' / '+(w.goal||3)+' · награда '+(w.reward_xp||75)+' XP</div><button class="bigbtn" id="extraWeeklyClaim" style="width:100%;margin-top:10px" '+(w.progress>=w.goal&&!w.claimed?'':'disabled')+'>'+(w.claimed?'Уже получено':'Забрать награду')+'</button></div><div class="hint">Тема недели меняется автоматически. Прогресс учитывает только новые находки.</div>');
+  $('extraWeeklyClaim').onclick=async()=>{try{if(!ON())return toast('Награды синхронизируются в онлайне');await rpc('extra_claim',{code:'weekly'});SND.win();extraWeeklySheet()}catch(e){toast(errText(e))}};
+}
+async function extraHistorySheet(){
+  if(!ON())return sheet('<h3>🕘 История</h3><div class="hint">История синхронизируется только у онлайн-аккаунта. В песочнице доступна твоя текущая коллекция.</div>');
+  let rows;try{rows=await rpc('extra_history',{limit:50})}catch(e){return extraMissingNotice()}
+  sheet('<h3>🕘 История игр</h3><div class="plist">'+(rows.length?rows.map(x=>'<div class="prow"><div style="flex:1;min-width:0"><b>'+esc(extraHistoryText(x))+'</b><div class="hint" style="margin:2px 0 0">'+new Date(x.at).toLocaleString('ru-RU')+'</div></div></div>').join(''):'<div class="hint">Пока записей нет. Открывай кейсы и играй — события появятся здесь.</div>')+'</div>');
+}
+async function extraFindFriendsSheet(){
+  if(!ON()||!onlineReady)return toast('Поиск друзей доступен в онлайне');
+  let rows;try{rows=await rpc('top',{by:'season'})}catch(e){return toast(errText(e))}
+  const me=DB.uid;
+  sheet('<h3>🔎 Найти игроков</h3><div class="hint">Отправь заявку — второй игрок сможет принять её в разделе «Друзья».</div><div class="plist">'+(rows.filter(r=>r.id!==me).map(r=>'<div class="prow"><div class="ava" style="background:'+esc(r.color||'#7565ff')+'">'+esc((r.name||'?')[0])+'</div><div style="flex:1;min-width:0"><b>'+esc(r.name)+'</b><div class="hint" style="margin:2px 0 0">'+fmt(r.points)+' очков сезона</div></div><button class="btn" data-addfriend="'+esc(r.id)+'">Добавить</button></div>').join('')||'<div class="hint">Пока никого нет.</div>')+'</div>');
+  $('sheet').querySelectorAll('[data-addfriend]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const r=await rpc('friend_request',{user:b.dataset.addfriend});toast(r.status==='accepted'?'Вы уже друзья':'Заявка отправлена')}catch(e){toast(errText(e));b.disabled=false}});
+}
+async function extraFriendsSheet(){
+  if(!ON()||!onlineReady)return sheet('<h3>👥 Друзья</h3><div class="hint">Друзья и сравнение профилей работают в онлайне.</div>');
+  let data;try{data=await rpc('friends',{})}catch(e){return extraMissingNotice()}
+  const friends=data.friends||[],incoming=data.incoming||[];
+  sheet('<h3>👥 Друзья</h3><button class="btn acc" id="extraFindFriends" style="width:100%;margin-bottom:10px">🔎 Найти игроков</button>'+(incoming.length?'<div class="uplbl">Входящие заявки</div><div class="plist">'+incoming.map(x=>'<div class="prow"><b style="flex:1">'+esc(x.name)+'</b><button class="btn acc" data-faccept="'+esc(x.id)+'">Принять</button><button class="btn" data-freject="'+esc(x.id)+'">Отклонить</button></div>').join('')+'</div>':'')+'<div class="uplbl" style="margin-top:12px">Твои друзья</div><div class="plist">'+(friends.length?friends.map(x=>'<div class="prow"><div class="ava" style="background:'+esc(x.color||'#7565ff')+'">'+esc((x.name||'?')[0])+'</div><div style="flex:1;min-width:0"><b>'+esc(x.name)+'</b><div class="hint" style="margin:2px 0 0">'+esc(x.title||'Новичок')+' · уровень '+x.level+' · '+fmt(x.points)+' очков сезона</div></div><button class="btn" data-fprofile="'+esc(x.id)+'">Профиль</button><button class="del" data-fremove="'+esc(x.id)+'">✕</button></div>').join(''):'<div class="hint">Пока нет друзей. Найди игроков через таблицу лидеров.</div>')+'</div>');
+  $('extraFindFriends').onclick=extraFindFriendsSheet;
+  $('sheet').querySelectorAll('[data-faccept],[data-freject]').forEach(b=>b.onclick=async()=>{try{await rpc('friend_answer',{user:b.dataset.faccept||b.dataset.freject,accept:!!b.dataset.faccept});extraFriendsSheet()}catch(e){toast(errText(e))}});
+  $('sheet').querySelectorAll('[data-fprofile]').forEach(b=>b.onclick=()=>openProfile(b.dataset.fprofile));
+  $('sheet').querySelectorAll('[data-fremove]').forEach(b=>b.onclick=async()=>{try{await rpc('friend_remove',{user:b.dataset.fremove});extraFriendsSheet()}catch(e){toast(errText(e))}});
+}
+async function extraShowcaseSheet(){
+  if(!ON())return sheet('<h3>🏆 Витрина</h3><div class="hint">В песочнице витрина показывает три лучших предмета. Для общей витрины профиля включи онлайн.</div>');
+  if(!onlineReady)return toast('Онлайн не подключён');
+  const cur=await rpc('extra_profile',{user:DB.uid}).catch(()=>null),sel=(cur&&cur.showcase||[]).map(x=>String(x.id));
+  sheet('<h3>🏆 Витрина профиля</h3><div class="hint">Выбери до трёх предметов, которые будут видны в твоём профиле другим игрокам.</div><div class="igrid">'+((cur&&cur.showcase||[]).map(x=>icard(itemOr(x.item),{price:x.price})).join('')||'<div class="hint">Пока пусто.</div>')+'</div><button class="bigbtn" id="extraPickShowcase" style="width:100%;margin-top:10px">Выбрать предметы</button>');
+  $('extraPickShowcase').onclick=()=>invPickSheet('Выбери предметы для витрины',()=>true,sel,3,async ids=>{try{await rpc('extra_showcase',{ids});toast('Витрина обновлена');extraShowcaseSheet()}catch(e){toast(errText(e))}});
+}
+$('extraCollection').onclick=extraCollectionSheet;
+$('extraProgress').onclick=extraProgressSheet;
+$('extraAchievements').onclick=extraAchievementsSheet;
+$('extraWeekly').onclick=extraWeeklySheet;
+$('extraHistory').onclick=extraHistorySheet;
+$('extraFriends').onclick=extraFriendsSheet;
+$('extraShowcase').onclick=extraShowcaseSheet;
 
 /* --- онлайн-батлы с друзьями: ставки замораживает сервер --- */
 const EMO=['😂','💀','🔥','😭','🤡','💸','🙏','😎'];
