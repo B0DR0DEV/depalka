@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Депость+ — визуальное превью</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#11131f;--card:#1c1f33;--card2:#262a45;--line:rgba(255,255,255,.07);--acc:#7565ff;--acc2:#9b8dff;--text:#fff;--muted:#8a8fb0;--gold:#ffcf4a;--green:#4ade80}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Manrope,system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:560px;margin:auto;padding:0 14px 40px}
+header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:14px 0;background:var(--bg)}
+.logo{font:800 21px Unbounded;margin-right:auto}.logo span{background:linear-gradient(90deg,#ffb84a,#ff7a3d);background-clip:text;color:transparent}
+.tag{font-size:11px;font-weight:800;color:var(--acc2);background:rgba(117,101,255,.13);padding:7px 10px;border-radius:99px;border:1px solid rgba(155,141,255,.2)}
+.avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#ffe08a,#ff8c55);color:#27172b;font:800 15px Unbounded}
+.hero{padding:20px;border-radius:24px;background:linear-gradient(120deg,#2b1ea8,#5b2bd6 48%,#d4325b 100%);position:relative;overflow:hidden;margin:8px 0 16px}
+.hero:after{content:"✦";position:absolute;right:18px;top:8px;font-size:100px;opacity:.14}
+.hero small{font-weight:800;opacity:.8}.hero h1{font:800 24px Unbounded;line-height:1.25;margin:10px 0}.hero p{font-size:13px;line-height:1.5;max-width:330px;margin:0;color:#eeeaff}
+.nav{display:flex;gap:7px;overflow:auto;scrollbar-width:none;margin:0 0 16px}.nav::-webkit-scrollbar{display:none}
+.nav button{flex:none;border:1px solid var(--line);background:var(--card);padding:11px 14px;border-radius:999px;font-size:13px;font-weight:800;color:var(--muted)}
+.nav button.active{background:var(--acc);border-color:var(--acc);color:white}
+h2{font:800 19px Unbounded;margin:18px 0 12px}
+.sub{font-size:12px;color:var(--muted);margin:-5px 0 13px}
+.panel{display:none}.panel.active{display:block}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;min-width:0}
+.stat b{display:block;font:800 18px Unbounded;margin-bottom:5px}.stat span{font-size:10px;color:var(--muted)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}
+.progress{height:8px;background:#2a2e4d;border-radius:99px;overflow:hidden;margin:9px 0 5px}.progress i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--acc),#4ade80)}
+.muted{color:var(--muted);font-size:12px}.strong{font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;min-width:0}
+.art{height:82px;border-radius:14px;background:linear-gradient(145deg,#34305d,#242742);display:grid;place-items:center;font-size:38px;margin-bottom:9px}
+.tile b{font-size:13px;display:block}.tile small{font-size:11px;color:var(--muted)}
+.badge{font-size:10px;font-weight:800;padding:5px 8px;border-radius:8px;background:rgba(117,101,255,.18);color:#bcb4ff}
+.achievement{display:flex;gap:11px;align-items:center}.medal{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#4b3f87,#282545);font-size:24px}
+.friend{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.friend:last-child{border:0}
+.face{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:#353052;font-weight:800}
+.btn{border:0;border-radius:13px;padding:10px 13px;background:var(--acc);font-size:12px;font-weight:800}.btn.secondary{background:var(--card2);border:1px solid var(--line)}
+.profile-cover{height:90px;border-radius:18px;background:linear-gradient(110deg,#30238c,#8052cf,#d54e79);margin-bottom:-24px}
+.profile-line{display:flex;align-items:end;gap:12px;padding:0 12px 12px}.profile-avatar{width:66px;height:66px;border:4px solid var(--card);border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#ffe08a,#ff8c55);color:#27172b;font:800 18px Unbounded}
+.preview-note{font-size:11px;color:var(--muted);text-align:center;padding:14px 8px 0;line-height:1.5}
+@media(max-width:360px){.stats{grid-template-columns:1fr 1fr}.hero h1{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div class="logo">ДЕПО<span>СТЬ</span></div><div class="tag">ВИЗУАЛЬНОЕ ПРЕВЬЮ</div><div class="avatar">D</div></header>
+<section class="hero"><small>НОВЫЕ РАЗДЕЛЫ · ДЕПОСТЬ+</small><h1>Твоя коллекция.<br>Твой прогресс.</h1><p>Дополнительные экраны профиля, достижений и коллекции в знакомой цветовой гамме.</p></section>
+<nav class="nav" aria-label="Разделы">
+<button class="active" data-tab="collection">Коллекция</button><button data-tab="progress">Прогресс</button><button data-tab="achievements">Достижения</button><button data-tab="weekly">События</button><button data-tab="friends">Друзья</button><button data-tab="profile">Профиль</button>
+</nav>
+<section class="panel active" id="collection">
+<h2>Моя коллекция</h2><p class="sub">Обзор предметов и заполненности коллекции</p>
+<div class="stats"><div class="stat"><b>24</b><span>ПРЕДМЕТА</span></div><div class="stat"><b>68%</b><span>СОБРАНО</span></div><div class="stat"><b>5</b><span>РЕДКИХ</span></div></div>
+<div class="box"><div class="row between"><b>Общий прогресс</b><span class="badge">24 / 35</span></div><div class="progress"><i style="width:68%"></i></div><div class="muted">Ещё 11 предметов до полного собрания</div></div>
+<div class="grid"><div class="tile"><div class="art">⚡</div><b>Неоновый импульс</b><small>Эпический · В коллекции</small></div><div class="tile"><div class="art">🌙</div><b>Лунный знак</b><small>Редкий · В коллекции</small></div><div class="tile"><div class="art">🌀</div><b>Вихрь</b><small>Обычный · В коллекции</small></div><div class="tile"><div class="art">💎</div><b>Кристалл</b><small>Легендарный · В коллекции</small></div></div>
+</section>
+<section class="panel" id="progress">
+<h2>Мой прогресс</h2><p class="sub">Уровень и опыт профиля</p>
+<div class="box"><div class="row between"><div><div class="muted">ТЕКУЩИЙ УРОВЕНЬ</div><div style="font:800 30px Unbounded;margin:5px 0">12</div></div><div style="font-size:42px">🏆</div></div><div class="row between"><b>Опыт</b><span class="badge">2 450 / 3 000 XP</span></div><div class="progress"><i style="width:82%"></i></div><div class="muted">550 XP до следующего уровня</div></div>
+<div class="stats"><div class="stat"><b>12</b><span>УРОВЕНЬ</span></div><div class="stat"><b>2.4K</b><span>ОПЫТ</span></div><div class="stat"><b>8</b><span>НАГРАД</span></div></div>
+<h2>Последние достижения</h2><div class="box achievement"><div class="medal">🌟</div><div><b>Первые шаги</b><div class="muted">Открыт профиль · +100 XP</div></div></div><div class="box achievement"><div class="medal">📚</div><div><b>Коллекционер</b><div class="muted">Собрано 20 предметов · +250 XP</div></div></div>
+</section>
+<section class="panel" id="achievements">
+<h2>Достижения</h2><p class="sub">Значки за активность и заполнение коллекции</p>
+<div class="box achievement"><div class="medal">🌱</div><div style="flex:1"><b>Начало пути</b><div class="muted">Завершить настройку профиля</div></div><span class="badge">ГОТОВО</span></div>
+<div class="box achievement"><div class="medal">📦</div><div style="flex:1"><b>Собиратель</b><div class="muted">Добавить 10 предметов в коллекцию</div><div class="progress"><i style="width:100%"></i></div></div><span class="badge">10/10</span></div>
+<div class="box achievement"><div class="medal">💠</div><div style="flex:1"><b>Редкая находка</b><div class="muted">Собрать 5 редких предметов</div><div class="progress"><i style="width:60%"></i></div></div><span class="badge">3/5</span></div>
+<div class="box achievement"><div class="medal">🏅</div><div style="flex:1"><b>Ветеран</b><div class="muted">Достичь 15 уровня</div><div class="progress"><i style="width:80%"></i></div></div><span class="badge">12/15</span></div>
+</section>
+<section class="panel" id="weekly">
+<h2>События недели</h2><p class="sub">Спокойные задания на исследование и коллекцию</p>
+<div class="box"><div class="row between"><b>Неделя коллекционера</b><span class="badge">4 ДНЯ</span></div><p class="muted">Изучи каталог и отметь уже имеющиеся у тебя предметы.</p><div class="progress"><i style="width:60%"></i></div><div class="row between"><span class="muted">3 из 5 шагов</span><b>60%</b></div></div>
+<div class="box"><div class="row"><div class="medal">🧭</div><div><b>Исследователь</b><div class="muted">Просмотри 3 категории каталога</div></div></div><div class="progress"><i style="width:66%"></i></div><div class="muted">2 / 3 категории</div></div>
+<div class="box"><div class="row"><div class="medal">🗂️</div><div><b>Порядок в коллекции</b><div class="muted">Добавь описание к 5 предметам</div></div></div><div class="progress"><i style="width:40%"></i></div><div class="muted">2 / 5 предметов</div></div>
+</section>
+<section class="panel" id="friends">
+<h2>Друзья</h2><p class="sub">Профили и коллекции друзей</p>
+<div class="box"><div class="row between"><b>Твои друзья</b><span class="badge">3</span></div>
+<div class="friend"><div class="face">M</div><div style="flex:1"><b>moonbyte</b><div class="muted">Уровень 18 · 42 предмета</div></div><button class="btn secondary">Профиль</button></div>
+<div class="friend"><div class="face">K</div><div style="flex:1"><b>k0smos</b><div class="muted">Уровень 14 · 31 предмет</div></div><button class="btn secondary">Профиль</button></div>
+<div class="friend"><div class="face">N</div><div style="flex:1"><b>neonfox</b><div class="muted">Уровень 9 · 19 предметов</div></div><button class="btn secondary">Профиль</button></div></div>
+</section>
+<section class="panel" id="profile">
+<h2>Витрина профиля</h2><p class="sub">Внешний вид и избранные предметы</p>
+<div class="box"><div class="profile-cover"></div><div class="profile-line"><div class="profile-avatar">D</div><div><b style="font-size:16px">depost_user</b><div class="muted">Уровень 12 · Коллекционер</div></div></div><div class="row" style="padding:0 12px 12px"><span class="badge">✦ Ветеран</span><span class="badge">💠 Собираю редкое</span></div></div>
+<h2>Избранное</h2><div class="grid"><div class="tile"><div class="art">⚡</div><b>Неоновый импульс</b><small>Эпический</small></div><div class="tile"><div class="art">💎</div><b>Кристалл</b><small>Легендарный</small></div></div>
+</section>
+<p class="preview-note">Это отдельный статический макет для просмотра. Данные демонстрационные; существующие разделы и механики сайта не изменяются.</p>
+</div>
+<script>
+document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener('click',()=>{
+ document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b===button));
+ document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===button.dataset.tab));
+}));
+</script>
+</body>
+</html>
