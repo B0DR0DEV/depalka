@@ -27,6 +27,8 @@ button{font-family:inherit;color:inherit}
 .ava{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;overflow:hidden;font:800 18px Unbounded;color:#14112b;cursor:pointer}
 .ava img{width:100%;height:100%;object-fit:cover}
 .ava.s{width:28px;height:28px;font-size:12px}
+.ava.extra-frame-violet{border:2px solid #9b8dff;box-shadow:0 0 0 3px rgba(155,141,255,.16)}
+.ava.extra-frame-gold{border:2px solid #ffcf4a;box-shadow:0 0 0 3px rgba(255,207,74,.16)}
 
 /* live */
 .live{display:flex;gap:8px;margin:2px 0 16px;align-items:stretch}
@@ -1429,8 +1431,8 @@ $('topTile').onclick=()=>go('top');$('topBack').onclick=()=>go('cases');
 async function openProfile(uid){if(!onlineReady||!uid)return toast('Онлайн не подключён');sheet('<div class="hint">Загружаю…</div>');
   let d;try{d=await rpc('profile',{user:uid})}catch(e){return sheet(`<div class="hint">${esc(errText(e))}</div>`)}
   let xpProfile=null;try{xpProfile=await rpc('extra_profile',{user:uid})}catch(e){}
-  const me=uid===DB.uid,show=xpProfile&&xpProfile.showcase&&xpProfile.showcase.length?xpProfile.showcase:d.inv.slice(0,3);
-  sheet(`<div class="row" style="gap:12px;align-items:center;flex-wrap:nowrap"><div class="ava" style="width:58px;height:58px;font-size:26px;flex:none;background:${esc(d.color||'#7565ff')}">${esc((d.name||'?')[0])}</div><div style="min-width:0"><h3 style="margin:0">${esc(d.name)}${me?' <span class="tag">ТЫ</span>':''}</h3><div class="hint" style="margin:2px 0 0">${xpProfile?esc(xpProfile.title)+' · ⭐ уровень '+xpProfile.level+' · ':''}${d.crowns?'👑'.repeat(Math.min(5,d.crowns))+' ':''}🔥 серия ${d.streak} · 🥚 пасхалок ${d.eggs}</div></div></div>
+  const me=uid===DB.uid,show=xpProfile?xpProfile.showcase:d.inv.slice(0,3),frameClass=xpProfile&&xpProfile.frame==='gold'?' extra-frame-gold':xpProfile&&xpProfile.frame==='violet'?' extra-frame-violet':'';
+  sheet(`<div class="row" style="gap:12px;align-items:center;flex-wrap:nowrap"><div class="ava${frameClass}" style="width:58px;height:58px;font-size:26px;flex:none;background:${esc(d.color||'#7565ff')}">${esc((d.name||'?')[0])}</div><div style="min-width:0"><h3 style="margin:0">${esc(d.name)}${me?' <span class="tag">ТЫ</span>':''}</h3><div class="hint" style="margin:2px 0 0">${xpProfile?esc(xpProfile.title)+' · ⭐ уровень '+xpProfile.level+' · ':''}${d.crowns?'👑'.repeat(Math.min(5,d.crowns))+' ':''}🔥 серия ${d.streak} · 🥚 пасхалок ${d.eggs}</div></div></div>
     <div class="stat three" style="margin-top:12px"><div><b>${fmtK(d.points)}</b><span>очки сезона</span></div><div><b>${fmtK(d.wealth)}</b><span>богатство</span></div><div><b>${fmt(d.cases)}</b><span>кейсов</span></div></div>
     <div class="uplbl">🏆 Витрина</div><div class="igrid" style="margin-top:6px">${show.map(x=>icard(itemOr(x.item),{price:x.price})).join('')||'<div class="hint" style="grid-column:1/-1">Пусто</div>'}</div>
     ${d.best_item?`<div class="hint">Лучший дроп за всё время: «${esc(itemOr(d.best_item).name)}» за ${fmt(d.best_price)} 🪙</div>`:''}
