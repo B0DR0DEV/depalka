@@ -1518,7 +1518,7 @@ function extraLocalData(){
 }
 async function extraGetHub(){if(ON()){if(!onlineReady)throw new Error('Онлайн не подключён');return await rpc('extra_hub',{})}return extraLocalData()}
 const extraHistoryText=x=>{
-  const d=x.details||{},names={item_get:'Получен предмет',item_removed:'Предмет покинул инвентарь'};
+  const d=x.details||{},names={item_get:'Получен предмет'};
   return (names[x.kind]||'Событие коллекции')+(d.item?' · '+itemOr(d.item).name:'');
 };
 function extraMissingNotice(){
@@ -1590,7 +1590,7 @@ async function extraHistorySheet(){
     return;
   }
   let rows;try{rows=(await rpc('extra_history',{limit:50})).filter(x=>x.kind==='item_get'||x.kind==='item_removed')}catch(e){return extraMissingNotice()}
-  sheet('<h3>🕘 История коллекции</h3><div class="plist">'+(rows.length?rows.map(x=>'<div class="prow"><div style="flex:1;min-width:0"><b>'+esc(extraHistoryText(x))+'</b><div class="hint" style="margin:2px 0 0">'+new Date(x.at).toLocaleString('ru-RU')+'</div></div></div>').join(''):'<div class="hint">Записи появятся здесь, когда предметы будут добавлены в инвентарь или покинут его.</div>')+'</div>');
+  sheet('<h3>🕘 История коллекции</h3><div class="plist">'+(rows.length?rows.map(x=>'<div class="prow"><div style="flex:1;min-width:0"><b>'+esc(extraHistoryText(x))+'</b><div class="hint" style="margin:2px 0 0">'+new Date(x.at).toLocaleString('ru-RU')+'</div></div></div>').join(''):'<div class="hint">Здесь сохраняются находки, пополнившие твою коллекцию.</div>')+'</div>');
 }
 async function extraFindFriendsSheet(){
   if(!ON()||!onlineReady)return toast('Поиск друзей доступен в онлайне');
