@@ -502,8 +502,8 @@ html,body{overflow-x:hidden;max-width:100%}
     </section>
     <section class="plus-panel" data-plus-panel="progress">
       <h2>Мой прогресс</h2><p class="hint" style="margin-top:-5px">Профильные отметки и персональные цели</p>
-      <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><div><div class="hint" style="margin:0">ТВОЙ ПРОФИЛЬ</div><b style="font:800 28px Unbounded">Уровень 1</b></div><div style="font-size:40px">🏆</div></div><div class="plus-row" style="justify-content:space-between;margin-top:12px"><b>Заполнение профиля</b><span class="plus-badge">2 / 4</span></div><div class="plus-progress"><i style="width:50%"></i></div><div class="hint" style="margin:0">Добавь описание и выбери оформление, чтобы заполнить профиль</div></div>
-      <div class="plus-stats"><div class="plus-stat"><b>2</b><span>ОТМЕТКИ</span></div><div class="plus-stat"><b id="plusProgressFav">0</b><span>ИЗБРАННОЕ</span></div><div class="plus-stat"><b>0</b><span>НАГРАД</span></div></div>
+      <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><div><div class="hint" style="margin:0">ТВОЙ ПРОФИЛЬ</div><b style="font:800 28px Unbounded">Depost+</b></div><div style="font-size:40px">🏆</div></div><div class="plus-row" style="justify-content:space-between;margin-top:12px"><b>Заполнение профиля</b><span class="plus-badge" id="plusProfileProgressText">0 / 2</span></div><div class="plus-progress"><i id="plusProfileProgressBar" style="width:0%"></i></div><div class="hint" id="plusProfileProgressHint" style="margin:0">Отметки профиля подтверждаются сервером</div></div>
+      <div class="plus-stats"><div class="plus-stat"><b id="plusServerAchievementsCount">1</b><span>ДОСТИЖЕНИЯ</span></div><div class="plus-stat"><b id="plusProgressFav">0</b><span>ИЗБРАННОЕ</span></div><div class="plus-stat"><b>0</b><span>НАГРАД</span></div></div>
       <div class="plus-box"><div class="plus-row"><div class="plus-medal">🧩</div><div><b>Оформи профиль</b><div class="hint" style="margin:3px 0 0">Выбери титул и заполни описание</div></div></div></div>
       <div class="plus-box"><div class="plus-row"><div class="plus-medal">📚</div><div><b>Изучи каталог</b><div class="hint" style="margin:3px 0 0">Посмотри карточки и добавь избранное</div></div></div></div>
     </section>
@@ -512,12 +512,12 @@ html,body{overflow-x:hidden;max-width:100%}
       <div class="plus-box plus-row"><div class="plus-medal">🌱</div><div style="flex:1"><b>Начало пути</b><div class="hint" style="margin:3px 0 0">Открыть раздел профиля</div></div><span class="plus-badge">ГОТОВО</span></div>
       <div class="plus-box plus-row"><div class="plus-medal">⭐</div><div style="flex:1"><b>Избранное</b><div class="hint" style="margin:3px 0 0">Сохранить 3 карточки каталога</div><div class="plus-progress"><i id="plusFavProgress" style="width:0%"></i></div></div><span class="plus-badge" id="plusFavProgressText">0/3</span></div>
       <div class="plus-box plus-row"><div class="plus-medal">🎨</div><div style="flex:1"><b>Свой стиль</b><div class="hint" style="margin:3px 0 0">Выбрать титул профиля</div></div><span class="plus-badge" id="plusTitleStatus">В ПРОЦЕССЕ</span></div>
-      <div class="plus-box plus-row"><div class="plus-medal">🗂️</div><div style="flex:1"><b>Исследователь</b><div class="hint" style="margin:3px 0 0">Просмотреть все категории каталога</div></div><span class="plus-badge">В ПРОЦЕССЕ</span></div>
+      <div class="plus-box plus-row"><div class="plus-medal">💠</div><div style="flex:1"><b>Большая коллекция</b><div class="hint" style="margin:3px 0 0">Сохранить 10 карточек в избранное</div><div class="plus-progress"><i id="plusFav10Progress" style="width:0%"></i></div></div><span class="plus-badge" id="plusFav10Text">0/10</span></div>
     </section>
     <section class="plus-panel" data-plus-panel="weekly">
       <h2>События недели</h2><p class="hint" style="margin-top:-5px">Спокойные цели без ставок и случайных наград</p>
-      <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Неделя коллекционера</b><span class="plus-badge">7 ДНЕЙ</span></div><p class="hint">Наведи порядок в каталоге и настрой профиль</p><div class="plus-progress"><i style="width:40%"></i></div><div class="hint" style="margin:0">2 из 5 шагов выполнено</div></div>
-      <div class="plus-box plus-row"><div class="plus-medal">🧭</div><div><b>Исследователь</b><div class="hint" style="margin:3px 0 0">Просмотри 3 категории каталога</div><div class="plus-progress"><i style="width:66%"></i></div><div class="hint" style="margin:0">2 / 3 категории</div></div></div>
+      <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Неделя коллекционера</b><span class="plus-badge">БЕЗ СТАВОК</span></div><p class="hint">Добавь две карточки в избранное и выбери титул</p><div class="plus-progress"><i id="plusWeeklyProgressBar" style="width:0%"></i></div><div class="hint" id="plusWeeklyProgressText" style="margin:0">0 / 3 шагов</div></div>
+      <div class="plus-box plus-row"><div class="plus-medal">⭐</div><div><b>Избранное</b><div class="hint" style="margin:3px 0 0">Сохрани 3 карточки каталога</div><div class="plus-progress"><i id="plusWeeklyFav3Bar" style="width:0%"></i></div><div class="hint" id="plusWeeklyFav3Text" style="margin:0">0 / 3 карточки</div></div></div>
       <div class="plus-box plus-row"><div class="plus-medal">🖼️</div><div><b>Витрина</b><div class="hint" style="margin:3px 0 0">Выбери 2 предмета в избранное</div><div class="plus-progress"><i id="plusWeeklyFavProgress" style="width:0%"></i></div><div class="hint" id="plusWeeklyFavText" style="margin:0">0 / 2 предмета</div></div></div>
     </section>
     <section class="plus-panel" data-plus-panel="friends">
@@ -1657,6 +1657,16 @@ function plusRenderItems(){
  $('plusProgressFav').textContent=plusFavs.size;
  $('plusFavProgress').style.width=Math.min(100,plusFavs.size/3*100)+'%';
  $('plusFavProgressText').textContent=Math.min(3,plusFavs.size)+'/3';
+ $('plusFav10Progress').style.width=Math.min(100,plusFavs.size/10*100)+'%';$('plusFav10Text').textContent=Math.min(10,plusFavs.size)+'/10';
+ const achievements=plusServer?.achievements||{profile_started:true,favorites_3:plusFavs.size>=3,favorites_10:plusFavs.size>=10,has_title:plusTitleIndex>0};
+ const achieved=Object.values(achievements).filter(Boolean).length;
+ $('plusServerAchievementsCount').textContent=achieved;
+ const profileSteps=(achievements.profile_started?1:0)+(achievements.has_title?1:0);
+ $('plusProfileProgressText').textContent=profileSteps+'/2';$('plusProfileProgressBar').style.width=(profileSteps/2*100)+'%';
+ $('plusProfileProgressHint').textContent='Подтверждено сервером: '+profileSteps+' из 2 отметок профиля';
+ const weeklySteps=(plusFavs.size>=2?1:0)+(plusTitleIndex>0?1:0)+(plusFavs.size>=3?1:0);
+ $('plusWeeklyProgressBar').style.width=(weeklySteps/3*100)+'%';$('plusWeeklyProgressText').textContent=weeklySteps+' / 3 шагов';
+ $('plusWeeklyFav3Bar').style.width=Math.min(100,plusFavs.size/3*100)+'%';$('plusWeeklyFav3Text').textContent=Math.min(3,plusFavs.size)+' / 3 карточки';
  $('plusWeeklyFavProgress').style.width=Math.min(100,plusFavs.size/2*100)+'%';
  $('plusWeeklyFavText').textContent=Math.min(2,plusFavs.size)+' / 2 предмета';
  $('plusProfileFavs').innerHTML=PLUS_ITEMS.filter(x=>plusFavs.has(x.id)).map(x=>'<div class="plus-item"><div class="plus-art">'+vis(x.item)+'</div><b>'+esc(x.name)+'</b><small>'+esc(x.label)+'</small></div>').join('');
