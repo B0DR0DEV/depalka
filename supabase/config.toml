@@ -1,0 +1,2 @@
+[functions.depost-auth]
+verify_jwt = false
