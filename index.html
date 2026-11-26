@@ -1679,8 +1679,8 @@ const PLUS_ITEMS=(()=>{const unique=new Map();ALLITEMS().forEach(it=>{if(!it||!i
 const PLUS_TITLES=['Коллекционер','Исследователь','Хранитель каталога','Создатель витрины'];
 let plusFilter='all',plusTitleIndex=0,plusFavs=new Set(),plusEvents=[],plusServer=null,plusSearchTimer=null,plusSearchResults=[];
 function plusSetStatus(message,isError=false){const el=$('plusServerStatus');if(el){el.textContent=message;el.style.color=isError?'#ff8a8a':'var(--muted)'}}
-async function plusLoadState(){if(!onlineReady){plusServer=null;plusSetStatus('Нужен вход в онлайн-аккаунт',true);return false}try{plusServer=await rpc('plus_state',{});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(plusServer.title));plusSetStatus('Синхронизировано с сервером');plusRenderItems();plusRenderHistory();plusRenderFriends();return true}catch(e){plusServer=null;plusSetStatus('Серверный модуль ещё не установлен: '+errText(e),true);return false}}
-async function plusRefresh(){try{plusServer=await rpc('plus_state',{});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(plusServer.title));plusSetStatus('Синхронизировано с сервером');plusRenderItems();plusRenderHistory();plusRenderFriends();return true}catch(e){plusSetStatus('Ошибка синхронизации: '+errText(e),true);return false}}
+async function plusLoadState(){if(!onlineReady){plusServer=null;plusSetStatus('Нужен вход в онлайн-аккаунт',true);return false}try{plusServer=await rpc('plus_state',{});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(plusServer.title));plusSetStatus('Синхронизировано с сервером');plusRenderItems();plusRenderHistory();plusRenderFriends();dpRenderDmFriends();await dpRefreshExtra();return true}catch(e){plusServer=null;plusSetStatus('Серверный модуль ещё не установлен: '+errText(e),true);return false}}
+async function plusRefresh(){try{plusServer=await rpc('plus_state',{});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(plusServer.title));plusSetStatus('Синхронизировано с сервером');plusRenderItems();plusRenderHistory();plusRenderFriends();dpRenderDmFriends();await dpRefreshExtra();return true}catch(e){plusSetStatus('Ошибка синхронизации: '+errText(e),true);return false}}
 function plusLog(title,detail){/* история создаётся только серверными функциями */}
 function plusCard(item,compact=false){const fav=plusFavs.has(item.id);return '<div class="plus-item"><div class="plus-art">'+vis(item.item)+'</div><b>'+esc(item.name)+'</b><small>'+esc(item.label)+' · Каталог</small><div class="plus-item-foot"><span class="plus-badge">'+esc(item.label.toUpperCase())+'</span><button class="plus-fav '+(fav?'on':'')+'" data-plus-fav="'+esc(item.id)+'">'+(fav?'★ В избранном':'☆ В избранное')+'</button></div></div>'}
 function plusRenderItems(){
@@ -1727,7 +1727,7 @@ function renderPlus(){
  $('plusName').textContent=p.name||'Игрок';$('plusTitle').textContent=PLUS_TITLES[plusTitleIndex];
  av.style.background=p.color||'linear-gradient(145deg,#ffe08a,#ff8c55)';
  av.innerHTML=p?avaHTML(p):'D';
- plusRenderItems();plusRenderHistory();if(plusServer)plusRenderFriends();
+ plusRenderItems();plusRenderHistory();if(plusServer){plusRenderFriends();dpRenderDmFriends();}
 }
 $('plusTabs').addEventListener('click',e=>{const b=e.target.closest('[data-plus-tab]');if(!b)return;
  $('plusTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
@@ -1746,6 +1746,85 @@ $('plusFriendSearch').addEventListener('input',()=>{clearTimeout(plusSearchTimer
 $('plusFriendSearchResults').addEventListener('click',async e=>{const b=e.target.closest('[data-plus-friend-add]');if(!b)return;try{await rpc('plus_friend_request',{user_id:b.dataset.plusFriendAdd});await plusRefresh();toast('Заявка отправлена')}catch(err){toast(errText(err))}});
 $('plusIncoming').addEventListener('click',async e=>{const b=e.target.closest('[data-plus-respond]');if(!b)return;try{await rpc('plus_friend_respond',{request_id:b.dataset.plusRespond,accept:b.dataset.accept==='true'});await plusRefresh()}catch(err){toast(errText(err))}});
 $('plusFriends').addEventListener('click',async e=>{const b=e.target.closest('[data-plus-friend-remove]');if(!b)return;if(!confirm('Убрать этого игрока из друзей?'))return;try{await rpc('plus_friend_remove',{user_id:b.dataset.plusFriendRemove});await plusRefresh()}catch(err){toast(errText(err))}});
+
+
+/* Depost+ social extensions */
+let dpDmTarget=null,dpAlbums=[],dpExtraReady=false;
+const dpRpc=async(name,args={})=>{if(!onlineReady)throw new Error('Сначала подключись к онлайну');return rpc(name,args)};
+const dpSet=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+const dpSafeTime=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'Недавно':d.toLocaleString('ru-RU',{dateStyle:'medium',timeStyle:'short'})};
+async function dpRefreshExtra(){
+ if(!onlineReady)return;
+ try{
+  const [feed,albums,stats,weekly]=await Promise.all([
+   dpRpc('plus_feed'),dpRpc('plus_album_list'),dpRpc('plus_stats'),dpRpc('plus_weekly')
+  ]);
+  dpRenderFeed(feed||[]);dpAlbums=albums||[];dpRenderAlbums();
+  dpSet('dpStatFriends',stats.friends||0);dpSet('dpStatAlbums',stats.albums||0);dpSet('dpStatFavorites',stats.favorites||0);
+  dpSet('dpJoinedAt',stats.joined_at?'На сайте с '+new Date(stats.joined_at).toLocaleDateString('ru-RU'):'');
+  const goals=weekly.goals||{},completed=weekly.completed||0;
+  $('dpJourney').innerHTML='<div class="dp-social-card"><b>Начало пути</b><small>'+esc(dpSafeTime(stats.joined_at))+'</small><p class="hint">Аккаунт Depost создан</p></div>'+
+   '<div class="dp-social-card"><b>Текущая неделя</b><small>'+completed+'/'+(weekly.total||4)+' целей</small><div class="plus-progress"><i style="width:'+(completed/(weekly.total||4)*100)+'%"></i></div><p class="hint">Избранное: '+(goals.favorites_3?'готово':'в процессе')+' · Оформление: '+(goals.custom_profile?'готово':'в процессе')+' · Альбом: '+(goals.album_created?'готово':'в процессе')+' · Друг: '+(goals.friend_added?'готово':'в процессе')+'</p></div>'+
+   (plusEvents||[]).slice(0,8).map(x=>'<div class="dp-social-card"><b>'+esc(x.kind.replaceAll('_',' '))+'</b><small>'+esc(dpSafeTime(x.at))+'</small><p class="hint">'+esc(x.detail)+'</p></div>').join('');
+  const p=plusServer||{};
+  if($('dpBio')&&document.activeElement!==$('dpBio'))$('dpBio').value=p.bio||'';
+  if($('dpTheme'))$('dpTheme').value=p.theme||'violet';
+  if($('dpFrame'))$('dpFrame').value=p.frame||'none';
+  if($('dpPrivacy'))$('dpPrivacy').value=p.privacy||'public';
+  dpExtraReady=true;
+ }catch(e){dpSet('dpProfileStatus','Дополнительные данные пока недоступны: '+errText(e))}
+}
+function dpRenderFeed(items){
+ const box=$('plusActivityFeed');if(!box)return;
+ box.innerHTML=items.length?items.map(x=>'<div class="dp-social-card"><b>'+esc(x.name)+'</b><p class="hint">'+esc(x.detail)+'</p><small>'+esc(dpSafeTime(x.at))+'</small></div>').join(''):'<div class="plus-friend-empty">Пока нет новых событий от друзей</div>';
+}
+function dpRenderAlbums(){
+ const box=$('dpAlbumList');if(!box)return;
+ box.innerHTML=dpAlbums.length?dpAlbums.map(a=>'<div class="dp-social-card"><b>'+esc(a.title)+'</b><p class="hint">'+esc(a.description||'Без описания')+'</p><small>'+((a.item_ids||[]).length)+' предметов</small><div class="dp-social-actions"><button data-dp-album-delete="'+a.id+'">Удалить</button></div></div>').join(''):'<div class="plus-friend-empty">Альбомов пока нет</div>';
+}
+function dpRenderDmFriends(){
+ const box=$('plusDmFriendList');if(!box)return;
+ const friends=plusServer?.friends||[];
+ box.innerHTML=friends.length?friends.map(x=>'<button class="btn" style="margin:3px" data-dp-dm-open="'+esc(x.user_id)+'" data-name="'+esc(x.name)+'">'+esc(x.name)+'</button>').join(''):'<div class="plus-friend-empty">Сначала добавь друзей</div>';
+}
+async function dpOpenDm(uid,name){
+ dpDmTarget=uid;$('plusDmArea').style.display='block';dpSet('plusDmSend','Отправить');
+ try{
+  const rows=await dpRpc('plus_message_list',{user_id:uid});
+  $('plusDmMessages').innerHTML=(rows||[]).map(m=>'<div class="dp-bubble '+(m.sender===DB.uid?'me':'')+'">'+esc(m.body)+'<div><small>'+esc(dpSafeTime(m.at))+'</small></div></div>').join('')||'<div class="hint">Сообщений пока нет</div>';
+  $('plusDmMessages').scrollTop=$('plusDmMessages').scrollHeight;
+ }catch(e){$('plusDmMessages').innerHTML='<div class="hint">'+esc(errText(e))+'</div>'}
+}
+async function dpOpenFriend(uid){
+ try{
+  const d=await dpRpc('plus_public_profile',{user_id:uid});
+  const fav=(d.showcase||[]).map(id=>PLUS_ITEMS.find(x=>x.id===id)).filter(Boolean);
+  sheet('<div class="plus-box"><div class="plus-cover"></div><div class="plus-profile-line"><div class="plus-avatar">'+esc((d.name||'?')[0])+'</div><div><b>'+esc(d.name)+'</b><div class="hint">'+esc(d.title||'Коллекционер')+'</div></div></div><p class="hint">'+esc(d.bio||'Описание не добавлено')+'</p><div class="plus-grid">'+fav.map(x=>plusCard(x,true)).join('')+'</div><div class="dp-social-actions"><button id="dpProfileMessage">Написать</button><button id="dpProfileBlock">Заблокировать</button><button id="dpProfileReport">Пожаловаться</button></div></div>');
+  $('dpProfileMessage').onclick=()=>{closeSheet();document.querySelector('[data-plus-tab="friends"]').click();dpOpenDm(uid,d.name)};
+  $('dpProfileBlock').onclick=async()=>{if(!confirm('Заблокировать пользователя? Вы перестанете быть друзьями и не сможете переписываться.'))return;try{await dpRpc('plus_block',{user_id:uid,block:true});closeSheet();await plusRefresh();await dpRefreshExtra();toast('Пользователь заблокирован')}catch(e){toast(errText(e))}};
+  $('dpProfileReport').onclick=async()=>{const reason=prompt('Причина: spam, harassment, inappropriate или other','other');if(!reason)return;const valid=['spam','harassment','inappropriate','other'];try{await dpRpc('plus_report',{user_id:uid,reason:valid.includes(reason)?reason:'other',details:''});toast('Жалоба отправлена на проверку')}catch(e){toast(errText(e))}};
+ }catch(e){toast(errText(e))}
+}
+$('plusFriends').addEventListener('click',e=>{const row=e.target.closest('.friend');if(!row)return;const rm=e.target.closest('[data-plus-friend-remove]');if(!rm){const id=row.querySelector('[data-plus-friend-remove]')?.dataset.plusFriendRemove;if(id)dpOpenFriend(id)}});
+$('plusFriends').addEventListener('dblclick',e=>{const row=e.target.closest('.friend');const id=row?.querySelector('[data-plus-friend-remove]')?.dataset.plusFriendRemove;if(id)dpOpenFriend(id)});
+$('plusFriends').addEventListener('click',e=>{const b=e.target.closest('[data-plus-friend-remove]');if(!b){const row=e.target.closest('.friend');if(row){const name=row.querySelector('b')?.textContent;const f=(plusServer?.friends||[]).find(x=>x.name===name);if(f)dpOpenFriend(f.user_id)}}});
+$('plusTabs').addEventListener('click',e=>{const b=e.target.closest('[data-plus-tab]');if(b&&b.dataset.plusTab==='friends')dpRenderDmFriends()});
+$('plusDmFriendList').addEventListener('click',e=>{const b=e.target.closest('[data-dp-dm-open]');if(b)dpOpenDm(b.dataset.dpDmOpen,b.dataset.name)});
+$('plusDmSend').addEventListener('click',async()=>{
+ const body=$('plusDmInput').value.trim();if(!dpDmTarget||!body)return;
+ try{await dpRpc('plus_message_send',{user_id:dpDmTarget,body});$('plusDmInput').value='';await dpOpenDm(dpDmTarget)}catch(e){toast(errText(e))}
+});
+$('dpSaveProfile').addEventListener('click',async()=>{
+ try{
+  const result=await dpRpc('plus_profile_update',{bio:$('dpBio').value,theme:$('dpTheme').value,frame:$('dpFrame').value,privacy:$('dpPrivacy').value,title:PLUS_TITLES[plusTitleIndex],showcase:Array.from(plusFavs).slice(0,6)});
+  plusServer=result;plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(result.title));dpSet('dpProfileStatus','Оформление сохранено на сервере');renderPlus();await dpRefreshExtra();
+ }catch(e){dpSet('dpProfileStatus',errText(e))}
+});
+$('dpNewAlbum').addEventListener('click',async()=>{
+ const title=$('dpAlbumTitle').value.trim();if(!title)return toast('Введи название альбома');
+ try{dpAlbums=await dpRpc('plus_album_save',{title,description:$('dpAlbumDescription').value,item_ids:Array.from(plusFavs).slice(0,20)});$('dpAlbumTitle').value='';$('dpAlbumDescription').value='';dpRenderAlbums();await dpRefreshExtra();toast('Альбом создан')}catch(e){toast(errText(e))}
+});
+$('dpAlbumList').addEventListener('click',async e=>{const b=e.target.closest('[data-dp-album-delete]');if(!b)return;if(!confirm('Удалить альбом?'))return;try{dpAlbums=await dpRpc('plus_album_delete',{id:b.dataset.dpAlbumDelete});dpRenderAlbums();await dpRefreshExtra()}catch(err){toast(errText(err))}});
 
 /* ===== boot ===== */
 render();
