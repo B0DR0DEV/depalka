@@ -5,7 +5,8 @@ alter table public.depost_plus_profiles
   add column if not exists theme text not null default 'violet',
   add column if not exists frame text not null default 'none',
   add column if not exists privacy text not null default 'public',
-  add column if not exists showcase text[] not null default '{}';
+  add column if not exists showcase text[] not null default '{}',
+  add column if not exists badges text[] not null default '{}';
 alter table public.depost_plus_profiles
   drop constraint if exists depost_plus_profiles_bio_len,
   add constraint depost_plus_profiles_bio_len check (char_length(bio) <= 160),
@@ -20,7 +21,7 @@ alter table public.depost_plus_profiles
 
 alter table public.depost_plus_events drop constraint if exists depost_plus_events_kind_check;
 alter table public.depost_plus_events add constraint depost_plus_events_kind_check
-  check (kind in ('favorite_added','favorite_removed','title_changed','friend_added','friend_removed','profile_updated','album_created'));
+  check (kind in ('favorite_added','favorite_removed','title_changed','friend_added','friend_removed','profile_updated','album_created','weekly_badge'));
 
 create table if not exists public.depost_plus_blocks (
   blocker uuid not null references auth.users(id) on delete cascade,
@@ -292,48 +293,35 @@ end $$;
 
 create or replace function public.api_plus_weekly(p jsonb)
 returns jsonb language plpgsql security definer set search_path=public as $$
-declare u uuid := public.me(); fav int; friends int; albums int; customized boolean;
+declare
+  u uuid := public.me();
+  fav int;
+  friends int;
+  albums int;
+  customized boolean;
+  done_count int;
+  week_key text := to_char(date_trunc('week',now()),'IYYY-"W"IW');
+  badge_key text;
+  unlocked boolean := false;
 begin
   insert into public.depost_plus_profiles(user_id) values(u) on conflict(user_id) do nothing;
   select cardinality(favorites), (bio<>'' or theme<>'violet' or frame<>'none' or title<>'Коллекционер')
     into fav,customized from public.depost_plus_profiles where user_id=u;
   select count(*) into friends from public.depost_plus_friendships where status='accepted' and (requester=u or recipient=u);
   select count(*) into albums from public.depost_plus_albums where user_id=u;
+  done_count := (case when fav>=3 then 1 else 0 end)+(case when customized then 1 else 0 end)+(case when albums>=1 then 1 else 0 end)+(case when friends>=1 then 1 else 0 end);
+  badge_key := 'creator_week_'||week_key;
+  if done_count=4 then
+    update public.depost_plus_profiles set badges=case when badge_key=any(badges) then badges else array_append(badges,badge_key) end where user_id=u;
+    if not exists(select 1 from public.depost_plus_events where user_id=u and kind='weekly_badge' and detail=badge_key) then
+      insert into public.depost_plus_events(user_id,kind,detail) values(u,'weekly_badge','Значок недели: Создатель');
+      unlocked := true;
+    end if;
+  end if;
   return jsonb_build_object(
     'week_start',date_trunc('week',now()),
-    'goals',jsonb_build_object(
-      'favorites_3',fav>=3,'custom_profile',customized,'album_created',albums>=1,'friend_added',friends>=1
-    ),
-    'completed',(case when fav>=3 then 1 else 0 end)+(case when customized then 1 else 0 end)+(case when albums>=1 then 1 else 0 end)+(case when friends>=1 then 1 else 0 end),
-    'total',4,'reward','Значок недели создателя'
-  );
-end $$;
-
--- Extend the state payload with profile customization fields for the client.
-create or replace function public.api_plus_state(p jsonb)
-returns jsonb language plpgsql security definer set search_path=public as $$
-declare u uuid := public.me(); pr public.depost_plus_profiles; fav_count int;
-begin
-  insert into public.depost_plus_profiles(user_id) values (u) on conflict (user_id) do nothing;
-  select * into pr from public.depost_plus_profiles where user_id = u;
-  fav_count := cardinality(pr.favorites);
-  return jsonb_build_object(
-    'title',pr.title,'favorites',to_jsonb(pr.favorites),'favorite_count',fav_count,
-    'bio',pr.bio,'theme',pr.theme,'frame',pr.frame,'privacy',pr.privacy,'showcase',to_jsonb(pr.showcase),
-    'achievements',jsonb_build_object('profile_started',true,'favorites_3',fav_count>=3,'favorites_10',fav_count>=10,'has_title',pr.title<>'Коллекционер','has_bio',pr.bio<>'','album_created',exists(select 1 from public.depost_plus_albums where user_id=u),'friends_3',(select count(*) from public.depost_plus_friendships f where f.status='accepted' and (f.requester=u or f.recipient=u))>=3,'showcase_full',cardinality(pr.showcase)>=4),
-    'weekly',jsonb_build_object('favorites_2',least(fav_count,2),'title_selected',pr.title<>'Коллекционер'),
-    'history',coalesce((select jsonb_agg(jsonb_build_object('id',e.id,'kind',e.kind,'detail',e.detail,'at',e.created_at) order by e.created_at desc)
-      from (select id,kind,detail,created_at from public.depost_plus_events where user_id=u order by created_at desc limit 30)e),'[]'::jsonb),
-    'friends',coalesce((select jsonb_agg(jsonb_build_object('user_id',w.user_id,'name',w.name,'color',w.color) order by w.name)
-      from public.depost_plus_friendships f join public.wallets w on w.user_id=case when f.requester=u then f.recipient else f.requester end
-      where f.status='accepted' and (f.requester=u or f.recipient=u)
-      and not exists(select 1 from public.depost_plus_blocks b where
-        (b.blocker=u and b.blocked=w.user_id) or (b.blocker=w.user_id and b.blocked=u))
-    ),'[]'::jsonb),
-    'incoming',coalesce((select jsonb_agg(jsonb_build_object('request_id',f.id,'user_id',f.requester,'name',w.name,'color',w.color) order by f.created_at desc)
-      from public.depost_plus_friendships f join public.wallets w on w.user_id=f.requester where f.recipient=u and f.status='pending'),'[]'::jsonb),
-    'outgoing',coalesce((select jsonb_agg(jsonb_build_object('request_id',f.id,'user_id',f.recipient,'name',w.name,'color',w.color) order by f.created_at desc)
-      from public.depost_plus_friendships f join public.wallets w on w.user_id=f.recipient where f.requester=u and f.status='pending'),'[]'::jsonb)
+    'goals',jsonb_build_object('favorites_3',fav>=3,'custom_profile',customized,'album_created',albums>=1,'friend_added',friends>=1),
+    'completed',done_count,'total',4,'badge_unlocked',unlocked,'badge','Создатель недели','badge_key',badge_key
   );
 end $$;
 
