@@ -18,6 +18,10 @@ alter table public.depost_plus_profiles
   drop constraint if exists depost_plus_profiles_showcase_check,
   add constraint depost_plus_profiles_showcase_check check (cardinality(showcase) <= 6);
 
+alter table public.depost_plus_events drop constraint if exists depost_plus_events_kind_check;
+alter table public.depost_plus_events add constraint depost_plus_events_kind_check
+  check (kind in ('favorite_added','favorite_removed','title_changed','friend_added','friend_removed','profile_updated','album_created'));
+
 create table if not exists public.depost_plus_blocks (
   blocker uuid not null references auth.users(id) on delete cascade,
   blocked uuid not null references auth.users(id) on delete cascade,
@@ -184,7 +188,7 @@ begin
   select coalesce(array_agg(distinct value),'{}') into v_items
     from jsonb_array_elements_text(coalesce(p->'item_ids','[]'::jsonb)) x(value);
   if cardinality(v_items)>20 then raise exception 'album_items_limit'; end if;
-  if exists(select 1 from unnest(v_items) sid where not exists(select 1 from public.catalog_items c where c.id=sid)) then
+  if exists(select 1 from unnest(v_items) as picked(item_id) where not exists(select 1 from public.catalog_items c where c.id=picked.item_id)) then
     raise exception 'album_item_not_found';
   end if;
   begin aid := nullif(p->>'id','')::bigint; exception when others then aid := null; end;
