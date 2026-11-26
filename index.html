@@ -322,6 +322,63 @@ html,body{overflow-x:hidden;max-width:100%}
 .plus-event p{font-size:11px;color:var(--muted);margin:4px 0 0}
 @media(max-width:380px){.plus-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.plus-hero h2{font-size:19px}.nav button{font-size:11px}}
 
+
+/* Depost+ Vibe layer — additive only */
+@keyframes dpFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-5px,0)}}
+@keyframes dpGlow{0%,100%{box-shadow:0 0 0 rgba(117,101,255,0)}50%{box-shadow:0 0 28px rgba(117,101,255,.18)}}
+@keyframes dpRise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes dpShimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+#pg-plus .plus-hero{position:relative;isolation:isolate;overflow:hidden}
+#pg-plus .plus-hero:before{content:"";position:absolute;z-index:-1;inset:-40% -20%;background:radial-gradient(ellipse at 20% 40%,rgba(117,101,255,.24),transparent 45%),radial-gradient(ellipse at 80% 55%,rgba(168,85,247,.16),transparent 42%);animation:dpFloat 7s ease-in-out infinite}
+#pg-plus .plus-box,#pg-plus .plus-item{animation:dpRise .42s both}
+#pg-plus .plus-box:nth-child(2n){animation-delay:.04s}
+#pg-plus .plus-tabs button,#pg-plus .plus-filters button,#pg-plus .plus-fav{transition:transform .2s ease,background .2s ease,box-shadow .2s ease}
+#pg-plus .plus-tabs button:active,#pg-plus .plus-filters button:active,#pg-plus .plus-fav:active{transform:scale(.96)}
+#pg-plus .plus-panel.on{animation:dpRise .32s ease both}
+#pg-plus .plus-avatar{animation:dpFloat 5s ease-in-out infinite,dpGlow 4s ease-in-out infinite}
+#pg-plus .plus-cover{background-size:200% 200%;animation:dpShimmer 12s linear infinite}
+#pg-plus .plus-progress i{transition:width .65s cubic-bezier(.2,.8,.2,1)}
+#pg-plus .plus-medal{transition:transform .25s ease,filter .25s ease}
+#pg-plus .plus-box:hover .plus-medal{transform:rotate(-8deg) scale(1.08);filter:drop-shadow(0 0 9px rgba(155,141,255,.45))}
+.dp-social-card{padding:12px;border:1px solid var(--line);background:var(--card);border-radius:18px;margin:8px 0;animation:dpRise .35s both}
+.dp-social-card small{color:var(--muted)}
+.dp-social-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.dp-social-actions button{border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:8px 10px;font-weight:800}
+.dp-field{width:100%;margin:6px 0 10px}
+.dp-chat{display:flex;flex-direction:column;gap:7px;max-height:260px;overflow:auto;padding:6px 0}
+.dp-bubble{max-width:86%;padding:9px 11px;border-radius:14px;background:var(--card2);overflow-wrap:anywhere}
+.dp-bubble.me{align-self:flex-end;background:#3b2f7a}
+.dp-spark{position:relative}
+@media(prefers-reduced-motion:reduce){#pg-plus *,#pg-plus *:before,#pg-plus *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+
+#pg-plus .plus-cover.dp-theme-midnight{background:linear-gradient(120deg,#171a35,#30365f,#171a35)}
+#pg-plus .plus-cover.dp-theme-aurora{background:linear-gradient(120deg,#164e63,#4c1d95,#164e63)}
+#pg-plus .plus-cover.dp-theme-sunset{background:linear-gradient(120deg,#7c2d12,#be185d,#7c2d12)}
+#pg-plus .plus-avatar.dp-frame-glow{box-shadow:0 0 0 3px var(--acc2),0 0 22px rgba(155,141,255,.65)}
+#pg-plus .plus-avatar.dp-frame-orbit{box-shadow:0 0 0 3px var(--gold),0 0 0 7px rgba(255,207,74,.2)}
+#pg-plus .plus-avatar.dp-frame-pixel{border:3px dashed var(--acc2);border-radius:14px}
+.plus-cover.dp-theme-midnight{background:linear-gradient(120deg,#171a35,#30365f,#171a35)}
+.plus-cover.dp-theme-aurora{background:linear-gradient(120deg,#164e63,#4c1d95,#164e63)}
+.plus-cover.dp-theme-sunset{background:linear-gradient(120deg,#7c2d12,#be185d,#7c2d12)}
+.plus-avatar.dp-frame-glow{box-shadow:0 0 0 3px var(--acc2),0 0 22px rgba(155,141,255,.65)}
+.plus-avatar.dp-frame-orbit{box-shadow:0 0 0 3px var(--gold),0 0 0 7px rgba(255,207,74,.2)}
+.plus-avatar.dp-frame-pixel{border:3px dashed var(--acc2);border-radius:14px}
+/* Global motion polish, preserving the original palette and layout */
+@media(prefers-reduced-motion:no-preference){
+ body{background-image:radial-gradient(ellipse at 12% 20%,rgba(117,101,255,.10),transparent 34%),radial-gradient(ellipse at 88% 72%,rgba(168,85,247,.08),transparent 32%);background-attachment:fixed;background-size:140% 140%;animation:dpAmbient 18s ease-in-out infinite alternate}
+ @keyframes dpAmbient{from{transform:translate3d(-1.5%,0,0) scale(1)}to{transform:translate3d(1.5%,1%,0) scale(1.06)}}
+ .ccard,.box,.tglink,.qtile,.lcard,.prow,.stat>div{transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+ .ccard:hover,.box:hover,.tglink:hover,.qtile:hover,.prow:hover{transform:translateY(-2px);border-color:rgba(155,141,255,.24);box-shadow:0 10px 28px rgba(0,0,0,.16)}
+ button{transition:filter .18s ease,transform .18s ease}
+ button:active{filter:brightness(1.12)}
+ .nav button{transition:background .22s ease,color .22s ease,transform .22s ease}
+ .nav button.on{box-shadow:inset 0 0 0 1px rgba(155,141,255,.10),0 0 18px rgba(117,101,255,.12)}
+ .pg.on{animation:dpRise .28s ease both}
+ .banner{background-size:180% 180%;animation:dpBanner 14s ease-in-out infinite alternate}
+ @keyframes dpBanner{from{background-position:0% 50%}to{background-position:100% 50%}}
+}
+
 </style>
 </head>
 <body>
@@ -516,7 +573,7 @@ html,body{overflow-x:hidden;max-width:100%}
     </section>
     <section class="plus-panel" data-plus-panel="weekly">
       <h2>События недели</h2><p class="hint" style="margin-top:-5px">Спокойные цели без ставок и случайных наград</p>
-      <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Неделя коллекционера</b><span class="plus-badge">БЕЗ СТАВОК</span></div><p class="hint">Добавь две карточки в избранное и выбери титул</p><div class="plus-progress"><i id="plusWeeklyProgressBar" style="width:0%"></i></div><div class="hint" id="plusWeeklyProgressText" style="margin:0">0 / 3 шагов</div></div>
+      <div class="plus-box"><b>Секретные достижения</b><p class="hint">Открываются за исследование профиля и коллекции</p><div id="dpSecretAchievements"><div class="hint">Проверяем прогресс…</div></div></div><div class="plus-box"><b>Цели недели</b><div id="dpWeeklyGoals"><div class="hint">Загружаем цели…</div></div></div><div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Неделя коллекционера</b><span class="plus-badge">БЕЗ СТАВОК</span></div><p class="hint">Добавь две карточки в избранное и выбери титул</p><div class="plus-progress"><i id="plusWeeklyProgressBar" style="width:0%"></i></div><div class="hint" id="plusWeeklyProgressText" style="margin:0">0 / 3 шагов</div></div>
       <div class="plus-box plus-row"><div class="plus-medal">⭐</div><div><b>Избранное</b><div class="hint" style="margin:3px 0 0">Сохрани 3 карточки каталога</div><div class="plus-progress"><i id="plusWeeklyFav3Bar" style="width:0%"></i></div><div class="hint" id="plusWeeklyFav3Text" style="margin:0">0 / 3 карточки</div></div></div>
       <div class="plus-box plus-row"><div class="plus-medal">🖼️</div><div><b>Витрина</b><div class="hint" style="margin:3px 0 0">Выбери 2 предмета в избранное</div><div class="plus-progress"><i id="plusWeeklyFavProgress" style="width:0%"></i></div><div class="hint" id="plusWeeklyFavText" style="margin:0">0 / 2 предмета</div></div></div>
     </section>
@@ -526,15 +583,22 @@ html,body{overflow-x:hidden;max-width:100%}
       <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Входящие заявки</b><span class="plus-badge" id="plusIncomingCount">0</span></div><div id="plusIncoming"><div class="plus-friend-empty">Пока заявок нет</div></div></div>
       <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Мои друзья</b><span class="plus-badge" id="plusFriendsCount">0</span></div><div id="plusFriends"><div class="plus-friend-empty">Пока друзей нет</div></div></div>
       <div class="hint" id="plusServerStatus" style="margin:0">Подключаем серверный профиль…</div>
+      <div class="plus-box"><b>Лента друзей</b><p class="hint">Новые события из профилей друзей</p><div id="plusActivityFeed"><div class="plus-friend-empty">Лента появится после добавления друзей</div></div></div>
+      <div class="plus-box"><b>Личные сообщения</b><p class="hint">Переписка доступна только между друзьями</p><div id="plusDmFriendList"></div><div id="plusDmArea" style="display:none"><div class="dp-chat" id="plusDmMessages"></div><input class="plus-search dp-field" id="plusDmInput" maxlength="500" placeholder="Сообщение…"><button class="btn acc" id="plusDmSend">Отправить</button></div></div>
+      <div class="plus-box"><b>Безопасность</b><p class="hint">Блокируй нежелательные контакты и отправляй жалобы на нарушения.</p><div class="hint" id="plusSafetyStatus">Управление доступно из карточки профиля друга.</div></div>
     </section>
     <section class="plus-panel" data-plus-panel="profile">
       <h2>Витрина профиля</h2><p class="hint" style="margin-top:-5px">Твоё оформление и избранные карточки</p>
-      <div class="plus-box"><div class="plus-cover"></div><div class="plus-profile-line"><div class="plus-avatar" id="plusAvatar">D</div><div style="min-width:0"><b id="plusName" style="font-size:15px">Игрок</b><div class="hint" id="plusTitle" style="margin:3px 0 0">Коллекционер</div></div></div>
+      <div class="plus-box"><div class="plus-cover" id="plusCover"></div><div class="plus-profile-line"><div class="plus-avatar" id="plusAvatar">D</div><div style="min-width:0"><b id="plusName" style="font-size:15px">Игрок</b><div class="hint" id="plusTitle" style="margin:3px 0 0">Коллекционер</div></div></div>
       <div class="plus-row" style="padding:0 10px 8px"><span class="plus-badge">✦ Профиль</span><span class="plus-badge">💠 Каталог</span></div></div>
       <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Титул профиля</b><button class="btn" id="plusChangeTitle">Изменить</button></div><div class="hint" style="margin:5px 0 0">Титул — только оформление, он не влияет на игровые механики.</div></div>
       <h2>Избранное</h2><div class="plus-grid" id="plusProfileFavs"></div><div class="plus-empty" id="plusProfileEmpty">Пока ничего не добавлено в избранное</div>
+      <div class="plus-box"><b>Настроить витрину</b><label class="hint" for="dpBio">Описание профиля (до 160 символов)</label><textarea id="dpBio" class="plus-search dp-field" maxlength="160" rows="3" placeholder="Немного о себе…"></textarea><label class="hint" for="dpTheme">Тема</label><select id="dpTheme" class="dp-field"><option value="violet">Violet</option><option value="midnight">Midnight</option><option value="aurora">Aurora</option><option value="sunset">Sunset</option></select><label class="hint" for="dpFrame">Рамка</label><select id="dpFrame" class="dp-field"><option value="none">Без рамки</option><option value="glow">Glow</option><option value="orbit">Orbit</option><option value="pixel">Pixel</option></select><label class="hint" for="dpPrivacy">Видимость профиля</label><select id="dpPrivacy" class="dp-field"><option value="public">Открытый</option><option value="friends">Только друзья</option><option value="private">Закрытый</option></select><button class="btn acc" id="dpSaveProfile">Сохранить оформление</button><div class="hint" id="dpProfileStatus" style="margin:6px 0 0"></div></div>
+      <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Альбомы коллекций</b><button class="btn" id="dpNewAlbum">+ Создать</button></div><input class="plus-search dp-field" id="dpAlbumTitle" maxlength="48" placeholder="Название альбома"><input class="plus-search dp-field" id="dpAlbumDescription" maxlength="180" placeholder="Описание"><div class="hint">В альбом можно добавить до 20 предметов из каталога.</div><div id="dpAlbumList"></div></div>
+      <div class="plus-box"><b>Статистика</b><div class="plus-stats"><div class="plus-stat"><b id="dpStatFriends">0</b><span>ДРУЗЬЯ</span></div><div class="plus-stat"><b id="dpStatAlbums">0</b><span>АЛЬБОМЫ</span></div><div class="plus-stat"><b id="dpStatFavorites">0</b><span>ИЗБРАННОЕ</span></div></div><div class="hint" id="dpJoinedAt"></div></div>
     </section>
     <section class="plus-panel" data-plus-panel="history">
+      <h2>Мой путь</h2><p class="hint" style="margin-top:-5px">Твоя история с момента создания аккаунта</p><div class="plus-box" id="dpJourney"><div class="hint">История появится после синхронизации</div></div>
       <h2>История активности</h2><p class="hint" style="margin-top:-5px">Только действия внутри нового раздела</p>
       <div class="plus-box"><div class="plus-timeline" id="plusTimeline"><div class="plus-friend-empty">Пока событий нет. Добавь карточку в избранное или измени титул профиля.</div></div></div>
     </section>
@@ -1643,8 +1707,8 @@ const PLUS_ITEMS=(()=>{const unique=new Map();ALLITEMS().forEach(it=>{if(!it||!i
 const PLUS_TITLES=['Коллекционер','Исследователь','Хранитель каталога','Создатель витрины'];
 let plusFilter='all',plusTitleIndex=0,plusFavs=new Set(),plusEvents=[],plusServer=null,plusSearchTimer=null,plusSearchResults=[];
 function plusSetStatus(message,isError=false){const el=$('plusServerStatus');if(el){el.textContent=message;el.style.color=isError?'#ff8a8a':'var(--muted)'}}
-async function plusLoadState(){if(!onlineReady){plusServer=null;plusSetStatus('Нужен вход в онлайн-аккаунт',true);return false}try{plusServer=await rpc('plus_state',{});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(plusServer.title));plusSetStatus('Синхронизировано с сервером');plusRenderItems();plusRenderHistory();plusRenderFriends();return true}catch(e){plusServer=null;plusSetStatus('Серверный модуль ещё не установлен: '+errText(e),true);return false}}
-async function plusRefresh(){try{plusServer=await rpc('plus_state',{});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(plusServer.title));plusSetStatus('Синхронизировано с сервером');plusRenderItems();plusRenderHistory();plusRenderFriends();return true}catch(e){plusSetStatus('Ошибка синхронизации: '+errText(e),true);return false}}
+async function plusLoadState(){if(!onlineReady){plusServer=null;plusSetStatus('Нужен вход в онлайн-аккаунт',true);return false}try{plusServer=await rpc('plus_state',{});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(plusServer.title));plusSetStatus('Синхронизировано с сервером');plusRenderItems();plusRenderHistory();plusRenderFriends();dpRenderDmFriends();await dpRefreshExtra();return true}catch(e){plusServer=null;plusSetStatus('Серверный модуль ещё не установлен: '+errText(e),true);return false}}
+async function plusRefresh(){try{plusServer=await rpc('plus_state',{});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(plusServer.title));plusSetStatus('Синхронизировано с сервером');plusRenderItems();plusRenderHistory();plusRenderFriends();dpRenderDmFriends();await dpRefreshExtra();return true}catch(e){plusSetStatus('Ошибка синхронизации: '+errText(e),true);return false}}
 function plusLog(title,detail){/* история создаётся только серверными функциями */}
 function plusCard(item,compact=false){const fav=plusFavs.has(item.id);return '<div class="plus-item"><div class="plus-art">'+vis(item.item)+'</div><b>'+esc(item.name)+'</b><small>'+esc(item.label)+' · Каталог</small><div class="plus-item-foot"><span class="plus-badge">'+esc(item.label.toUpperCase())+'</span><button class="plus-fav '+(fav?'on':'')+'" data-plus-fav="'+esc(item.id)+'">'+(fav?'★ В избранном':'☆ В избранное')+'</button></div></div>'}
 function plusRenderItems(){
@@ -1674,7 +1738,7 @@ function plusRenderItems(){
  $('plusTitleStatus').textContent=plusTitleIndex?'ГОТОВО':'В ПРОЦЕССЕ';
 }
 function plusRenderHistory(){
- const labels={favorite_added:'Добавлено в избранное',favorite_removed:'Убрано из избранного',title_changed:'Изменён титул',friend_added:'Добавлен друг',friend_removed:'Удалён друг'};
+ const labels={favorite_added:'Добавлено в избранное',favorite_removed:'Убрано из избранного',title_changed:'Изменён титул',friend_added:'Добавлен друг',friend_removed:'Удалён друг',weekly_badge:'Получен значок недели'};
  $('plusTimeline').innerHTML=plusEvents.length?plusEvents.map(x=>'<div class="plus-event"><time>'+esc(new Date(x.at).toLocaleString('ru-RU'))+'</time><b>'+esc(labels[x.kind]||'Активность')+'</b><p>'+esc(x.detail)+'</p></div>').join(''):'<div class="plus-friend-empty">История пока пуста</div>';
 }
 function plusRenderFriends(){
@@ -1691,7 +1755,9 @@ function renderPlus(){
  $('plusName').textContent=p.name||'Игрок';$('plusTitle').textContent=PLUS_TITLES[plusTitleIndex];
  av.style.background=p.color||'linear-gradient(145deg,#ffe08a,#ff8c55)';
  av.innerHTML=p?avaHTML(p):'D';
- plusRenderItems();plusRenderHistory();if(plusServer)plusRenderFriends();
+ const cover=$('plusCover');if(cover)cover.className='plus-cover dp-theme-'+(plusServer?.theme||'violet');
+ av.className='plus-avatar dp-frame-'+(plusServer?.frame||'none');
+ plusRenderItems();plusRenderHistory();if(plusServer){plusRenderFriends();dpRenderDmFriends();}
 }
 $('plusTabs').addEventListener('click',e=>{const b=e.target.closest('[data-plus-tab]');if(!b)return;
  $('plusTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
@@ -1703,13 +1769,96 @@ $('plusFilters').addEventListener('click',e=>{const b=e.target.closest('[data-pl
 $('plusSearch').addEventListener('input',plusRenderItems);
 $('plusGrid').addEventListener('click',async e=>{const b=e.target.closest('[data-plus-fav]');if(!b)return;
  const item=PLUS_ITEMS.find(x=>x.id===b.dataset.plusFav);if(!item||!onlineReady)return;
- b.disabled=true;try{plusServer=await rpc('plus_favorite',{item_id:item.id,action:plusFavs.has(item.id)?'remove':'add'});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusRenderItems();plusRenderHistory();plusRenderFriends();plusSetStatus('Сохранено на сервере')}catch(err){toast(errText(err));plusSetStatus('Не удалось сохранить: '+errText(err),true)}finally{b.disabled=false}
+ b.disabled=true;try{plusServer=await rpc('plus_favorite',{item_id:item.id,action:plusFavs.has(item.id)?'remove':'add'});plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];plusRenderItems();plusRenderHistory();plusRenderFriends();plusSetStatus('Сохранено на сервере');await dpRefreshExtra()}catch(err){toast(errText(err));plusSetStatus('Не удалось сохранить: '+errText(err),true)}finally{b.disabled=false}
 });
-$('plusChangeTitle').onclick=async()=>{if(!onlineReady)return toast('Сначала подключись к онлайну');const next=PLUS_TITLES[(plusTitleIndex+1)%PLUS_TITLES.length];try{plusServer=await rpc('plus_title',{title:next});plusTitleIndex=PLUS_TITLES.indexOf(plusServer.title);plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];renderPlus();plusRenderHistory();plusSetStatus('Титул сохранён на сервере')}catch(e){toast(errText(e));plusSetStatus('Не удалось изменить титул',true)}};
+$('plusChangeTitle').onclick=async()=>{if(!onlineReady)return toast('Сначала подключись к онлайну');const next=PLUS_TITLES[(plusTitleIndex+1)%PLUS_TITLES.length];try{plusServer=await rpc('plus_title',{title:next});plusTitleIndex=PLUS_TITLES.indexOf(plusServer.title);plusFavs=new Set(plusServer.favorites||[]);plusEvents=plusServer.history||[];renderPlus();plusRenderHistory();plusSetStatus('Титул сохранён на сервере');await dpRefreshExtra()}catch(e){toast(errText(e));plusSetStatus('Не удалось изменить титул',true)}};
 $('plusFriendSearch').addEventListener('input',()=>{clearTimeout(plusSearchTimer);const q=$('plusFriendSearch').value;plusSearchTimer=setTimeout(()=>plusSearchFriends(q),300)});
 $('plusFriendSearchResults').addEventListener('click',async e=>{const b=e.target.closest('[data-plus-friend-add]');if(!b)return;try{await rpc('plus_friend_request',{user_id:b.dataset.plusFriendAdd});await plusRefresh();toast('Заявка отправлена')}catch(err){toast(errText(err))}});
 $('plusIncoming').addEventListener('click',async e=>{const b=e.target.closest('[data-plus-respond]');if(!b)return;try{await rpc('plus_friend_respond',{request_id:b.dataset.plusRespond,accept:b.dataset.accept==='true'});await plusRefresh()}catch(err){toast(errText(err))}});
 $('plusFriends').addEventListener('click',async e=>{const b=e.target.closest('[data-plus-friend-remove]');if(!b)return;if(!confirm('Убрать этого игрока из друзей?'))return;try{await rpc('plus_friend_remove',{user_id:b.dataset.plusFriendRemove});await plusRefresh()}catch(err){toast(errText(err))}});
+
+
+/* Depost+ social extensions */
+let dpDmTarget=null,dpAlbums=[],dpExtraReady=false;
+const dpRpc=async(name,args={})=>{if(!onlineReady)throw new Error('Сначала подключись к онлайну');return rpc(name,args)};
+const dpSet=(id,value)=>{const el=$(id);if(el)el.textContent=value};
+const dpSafeTime=value=>{const d=new Date(value);return Number.isNaN(d.getTime())?'Недавно':d.toLocaleString('ru-RU',{dateStyle:'medium',timeStyle:'short'})};
+async function dpRefreshExtra(){
+ if(!onlineReady)return;
+ try{
+  const [feed,albums,stats,weekly]=await Promise.all([
+   dpRpc('plus_feed'),dpRpc('plus_album_list'),dpRpc('plus_stats'),dpRpc('plus_weekly')
+  ]);
+  dpRenderFeed(feed||[]);dpAlbums=albums||[];dpRenderAlbums();
+  dpSet('dpStatFriends',stats.friends||0);dpSet('dpStatAlbums',stats.albums||0);dpSet('dpStatFavorites',stats.favorites||0);
+  dpSet('dpJoinedAt',stats.joined_at?'На сайте с '+new Date(stats.joined_at).toLocaleDateString('ru-RU'):'');
+  const goals=weekly.goals||{},completed=weekly.completed||0;
+  const goalLabels={favorites_3:'Добавить 3 карточки в избранное',custom_profile:'Настроить профиль',album_created:'Создать альбом коллекции',friend_added:'Добавить друга'};
+  const badgeOwned=(plusServer?.badges||[]).includes(weekly.badge_key);
+  $('dpWeeklyGoals').innerHTML=Object.entries(goalLabels).map(([k,label])=>'<div class="dp-social-card"><b>'+(goals[k]?'✓ ':'○ ')+esc(label)+'</b><small>'+(goals[k]?'Выполнено':'В процессе')+'</small></div>').join('')+(badgeOwned?'<div class="dp-social-card"><b>🏅 Значок недели: Создатель</b><small>Фиксированная награда профиля · без валюты и случайности</small></div>':'');
+  const a=plusServer?.achievements||{};
+  const secret=[['bio','Немного о себе',!!a.has_bio],['album','Архивариус',!!a.album_created],['friends','Своя компания',!!a.friends_3],['showcase','Куратор витрины',!!a.showcase_full]];
+  $('dpSecretAchievements').innerHTML=secret.map(([id,label,done])=>'<div class="dp-social-card"><b>'+(done?'✦ ':'🔒 ')+esc(done?label:'Скрытое достижение')+'</b><small>'+(done?'Открыто':'Продолжай исследовать Depost+')+'</small></div>').join('');
+  $('dpJourney').innerHTML='<div class="dp-social-card"><b>Начало пути</b><small>'+esc(dpSafeTime(stats.joined_at))+'</small><p class="hint">Аккаунт Depost создан</p></div>'+
+   '<div class="dp-social-card"><b>Текущая неделя</b><small>'+completed+'/'+(weekly.total||4)+' целей</small><div class="plus-progress"><i style="width:'+(completed/(weekly.total||4)*100)+'%"></i></div><p class="hint">Избранное: '+(goals.favorites_3?'готово':'в процессе')+' · Оформление: '+(goals.custom_profile?'готово':'в процессе')+' · Альбом: '+(goals.album_created?'готово':'в процессе')+' · Друг: '+(goals.friend_added?'готово':'в процессе')+'</p></div>'+
+   (plusEvents||[]).slice(0,8).map(x=>'<div class="dp-social-card"><b>'+esc(x.kind.replaceAll('_',' '))+'</b><small>'+esc(dpSafeTime(x.at))+'</small><p class="hint">'+esc(x.detail)+'</p></div>').join('');
+  const p=plusServer||{};
+  if($('dpBio')&&document.activeElement!==$('dpBio'))$('dpBio').value=p.bio||'';
+  if($('dpTheme'))$('dpTheme').value=p.theme||'violet';
+  if($('dpFrame'))$('dpFrame').value=p.frame||'none';
+  if($('dpPrivacy'))$('dpPrivacy').value=p.privacy||'public';
+  dpExtraReady=true;
+ }catch(e){dpSet('dpProfileStatus','Дополнительные данные пока недоступны: '+errText(e))}
+}
+function dpRenderFeed(items){
+ const box=$('plusActivityFeed');if(!box)return;
+ box.innerHTML=items.length?items.map(x=>'<div class="dp-social-card"><b>'+esc(x.name)+'</b><p class="hint">'+esc(x.detail)+'</p><small>'+esc(dpSafeTime(x.at))+'</small></div>').join(''):'<div class="plus-friend-empty">Пока нет новых событий от друзей</div>';
+}
+function dpRenderAlbums(){
+ const box=$('dpAlbumList');if(!box)return;
+ box.innerHTML=dpAlbums.length?dpAlbums.map(a=>'<div class="dp-social-card"><b>'+esc(a.title)+'</b><p class="hint">'+esc(a.description||'Без описания')+'</p><small>'+((a.item_ids||[]).length)+' предметов</small><div class="dp-social-actions"><button data-dp-album-delete="'+a.id+'">Удалить</button></div></div>').join(''):'<div class="plus-friend-empty">Альбомов пока нет</div>';
+}
+function dpRenderDmFriends(){
+ const box=$('plusDmFriendList');if(!box)return;
+ const friends=plusServer?.friends||[];
+ box.innerHTML=friends.length?friends.map(x=>'<button class="btn" style="margin:3px" data-dp-dm-open="'+esc(x.user_id)+'" data-name="'+esc(x.name)+'">'+esc(x.name)+'</button>').join(''):'<div class="plus-friend-empty">Сначала добавь друзей</div>';
+}
+async function dpOpenDm(uid,name){
+ dpDmTarget=uid;$('plusDmArea').style.display='block';dpSet('plusDmSend','Отправить');
+ try{
+  const rows=await dpRpc('plus_message_list',{user_id:uid});
+  $('plusDmMessages').innerHTML=(rows||[]).map(m=>'<div class="dp-bubble '+(m.sender===DB.uid?'me':'')+'">'+esc(m.body)+'<div><small>'+esc(dpSafeTime(m.at))+'</small></div></div>').join('')||'<div class="hint">Сообщений пока нет</div>';
+  $('plusDmMessages').scrollTop=$('plusDmMessages').scrollHeight;
+ }catch(e){$('plusDmMessages').innerHTML='<div class="hint">'+esc(errText(e))+'</div>'}
+}
+async function dpOpenFriend(uid){
+ try{
+  const d=await dpRpc('plus_public_profile',{user_id:uid});
+  const fav=(d.showcase||[]).map(id=>PLUS_ITEMS.find(x=>x.id===id)).filter(Boolean);
+  sheet('<div class="plus-box"><div class="plus-cover dp-theme-'+esc(d.theme||'violet')+'"></div><div class="plus-profile-line"><div class="plus-avatar dp-frame-'+esc(d.frame||'none')+'">'+esc((d.name||'?')[0])+'</div><div><b>'+esc(d.name)+'</b><div class="hint">'+esc(d.title||'Коллекционер')+'</div></div></div><p class="hint">'+esc(d.bio||'Описание не добавлено')+'</p><div class="plus-grid">'+fav.map(x=>'<div class="plus-item"><div class="plus-art">'+vis(x.item)+'</div><b>'+esc(x.name)+'</b><small>'+esc(x.label)+'</small></div>').join('')+'</div><div class="dp-social-actions"><button id="dpProfileMessage">Написать</button><button id="dpProfileBlock">Заблокировать</button><button id="dpProfileReport">Пожаловаться</button></div></div>');
+  $('dpProfileMessage').onclick=()=>{closeSheet();document.querySelector('[data-plus-tab="friends"]').click();dpOpenDm(uid,d.name)};
+  $('dpProfileBlock').onclick=async()=>{if(!confirm('Заблокировать пользователя? Вы перестанете быть друзьями и не сможете переписываться.'))return;try{await dpRpc('plus_block',{user_id:uid,block:true});closeSheet();await plusRefresh();await dpRefreshExtra();toast('Пользователь заблокирован')}catch(e){toast(errText(e))}};
+  $('dpProfileReport').onclick=async()=>{const reason=prompt('Причина: spam, harassment, inappropriate или other','other');if(!reason)return;const valid=['spam','harassment','inappropriate','other'];try{await dpRpc('plus_report',{user_id:uid,reason:valid.includes(reason)?reason:'other',details:''});toast('Жалоба отправлена на проверку')}catch(e){toast(errText(e))}};
+ }catch(e){toast(errText(e))}
+}
+$('plusFriends').addEventListener('click',e=>{if(e.target.closest('[data-plus-friend-remove]'))return;const row=e.target.closest('.friend');if(!row)return;const id=row.querySelector('[data-plus-friend-remove]')?.dataset.plusFriendRemove;if(id)dpOpenFriend(id)});
+$('plusTabs').addEventListener('click',e=>{const b=e.target.closest('[data-plus-tab]');if(b&&b.dataset.plusTab==='friends')dpRenderDmFriends()});
+$('plusDmFriendList').addEventListener('click',e=>{const b=e.target.closest('[data-dp-dm-open]');if(b)dpOpenDm(b.dataset.dpDmOpen,b.dataset.name)});
+$('plusDmSend').addEventListener('click',async()=>{
+ const body=$('plusDmInput').value.trim();if(!dpDmTarget||!body)return;
+ try{await dpRpc('plus_message_send',{user_id:dpDmTarget,body});$('plusDmInput').value='';await dpOpenDm(dpDmTarget)}catch(e){toast(errText(e))}
+});
+$('dpSaveProfile').addEventListener('click',async()=>{
+ try{
+  const result=await dpRpc('plus_profile_update',{bio:$('dpBio').value,theme:$('dpTheme').value,frame:$('dpFrame').value,privacy:$('dpPrivacy').value,title:PLUS_TITLES[plusTitleIndex],showcase:Array.from(plusFavs).slice(0,6)});
+  plusServer=result;plusTitleIndex=Math.max(0,PLUS_TITLES.indexOf(result.title));dpSet('dpProfileStatus','Оформление сохранено на сервере');renderPlus();await dpRefreshExtra();
+ }catch(e){dpSet('dpProfileStatus',errText(e))}
+});
+$('dpNewAlbum').addEventListener('click',async()=>{
+ const title=$('dpAlbumTitle').value.trim();if(!title)return toast('Введи название альбома');
+ try{dpAlbums=await dpRpc('plus_album_save',{title,description:$('dpAlbumDescription').value,item_ids:Array.from(plusFavs).slice(0,20)});$('dpAlbumTitle').value='';$('dpAlbumDescription').value='';dpRenderAlbums();await dpRefreshExtra();toast('Альбом создан')}catch(e){toast(errText(e))}
+});
+$('dpAlbumList').addEventListener('click',async e=>{const b=e.target.closest('[data-dp-album-delete]');if(!b)return;if(!confirm('Удалить альбом?'))return;try{dpAlbums=await dpRpc('plus_album_delete',{id:b.dataset.dpAlbumDelete});dpRenderAlbums();await dpRefreshExtra()}catch(err){toast(errText(err))}});
 
 /* ===== boot ===== */
 render();
