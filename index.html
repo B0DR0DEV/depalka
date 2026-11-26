@@ -322,6 +322,35 @@ html,body{overflow-x:hidden;max-width:100%}
 .plus-event p{font-size:11px;color:var(--muted);margin:4px 0 0}
 @media(max-width:380px){.plus-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.plus-hero h2{font-size:19px}.nav button{font-size:11px}}
 
+
+/* Depost+ Vibe layer — additive only */
+@keyframes dpFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-5px,0)}}
+@keyframes dpGlow{0%,100%{box-shadow:0 0 0 rgba(117,101,255,0)}50%{box-shadow:0 0 28px rgba(117,101,255,.18)}}
+@keyframes dpRise{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes dpShimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+#pg-plus .plus-hero{position:relative;isolation:isolate;overflow:hidden}
+#pg-plus .plus-hero:before{content:"";position:absolute;z-index:-1;inset:-40% -20%;background:radial-gradient(ellipse at 20% 40%,rgba(117,101,255,.24),transparent 45%),radial-gradient(ellipse at 80% 55%,rgba(168,85,247,.16),transparent 42%);animation:dpFloat 7s ease-in-out infinite}
+#pg-plus .plus-box,#pg-plus .plus-item{animation:dpRise .42s both}
+#pg-plus .plus-box:nth-child(2n){animation-delay:.04s}
+#pg-plus .plus-tabs button,#pg-plus .plus-filters button,#pg-plus .plus-fav{transition:transform .2s ease,background .2s ease,box-shadow .2s ease}
+#pg-plus .plus-tabs button:active,#pg-plus .plus-filters button:active,#pg-plus .plus-fav:active{transform:scale(.96)}
+#pg-plus .plus-panel.on{animation:dpRise .32s ease both}
+#pg-plus .plus-avatar{animation:dpFloat 5s ease-in-out infinite,dpGlow 4s ease-in-out infinite}
+#pg-plus .plus-cover{background-size:200% 200%;animation:dpShimmer 12s linear infinite}
+#pg-plus .plus-progress i{transition:width .65s cubic-bezier(.2,.8,.2,1)}
+#pg-plus .plus-medal{transition:transform .25s ease,filter .25s ease}
+#pg-plus .plus-box:hover .plus-medal{transform:rotate(-8deg) scale(1.08);filter:drop-shadow(0 0 9px rgba(155,141,255,.45))}
+.dp-social-card{padding:12px;border:1px solid var(--line);background:var(--card);border-radius:18px;margin:8px 0;animation:dpRise .35s both}
+.dp-social-card small{color:var(--muted)}
+.dp-social-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.dp-social-actions button{border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:8px 10px;font-weight:800}
+.dp-field{width:100%;margin:6px 0 10px}
+.dp-chat{display:flex;flex-direction:column;gap:7px;max-height:260px;overflow:auto;padding:6px 0}
+.dp-bubble{max-width:86%;padding:9px 11px;border-radius:14px;background:var(--card2);overflow-wrap:anywhere}
+.dp-bubble.me{align-self:flex-end;background:#3b2f7a}
+.dp-spark{position:relative}
+@media(prefers-reduced-motion:reduce){#pg-plus *,#pg-plus *:before,#pg-plus *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
 </style>
 </head>
 <body>
@@ -526,6 +555,9 @@ html,body{overflow-x:hidden;max-width:100%}
       <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Входящие заявки</b><span class="plus-badge" id="plusIncomingCount">0</span></div><div id="plusIncoming"><div class="plus-friend-empty">Пока заявок нет</div></div></div>
       <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Мои друзья</b><span class="plus-badge" id="plusFriendsCount">0</span></div><div id="plusFriends"><div class="plus-friend-empty">Пока друзей нет</div></div></div>
       <div class="hint" id="plusServerStatus" style="margin:0">Подключаем серверный профиль…</div>
+      <div class="plus-box"><b>Лента друзей</b><p class="hint">Новые события из профилей друзей</p><div id="plusActivityFeed"><div class="plus-friend-empty">Лента появится после добавления друзей</div></div></div>
+      <div class="plus-box"><b>Личные сообщения</b><p class="hint">Переписка доступна только между друзьями</p><div id="plusDmFriendList"></div><div id="plusDmArea" style="display:none"><div class="dp-chat" id="plusDmMessages"></div><input class="plus-search dp-field" id="plusDmInput" maxlength="500" placeholder="Сообщение…"><button class="btn acc" id="plusDmSend">Отправить</button></div></div>
+      <div class="plus-box"><b>Безопасность</b><p class="hint">Блокируй нежелательные контакты и отправляй жалобы на нарушения.</p><div class="hint" id="plusSafetyStatus">Управление доступно из карточки профиля друга.</div></div>
     </section>
     <section class="plus-panel" data-plus-panel="profile">
       <h2>Витрина профиля</h2><p class="hint" style="margin-top:-5px">Твоё оформление и избранные карточки</p>
@@ -533,8 +565,12 @@ html,body{overflow-x:hidden;max-width:100%}
       <div class="plus-row" style="padding:0 10px 8px"><span class="plus-badge">✦ Профиль</span><span class="plus-badge">💠 Каталог</span></div></div>
       <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Титул профиля</b><button class="btn" id="plusChangeTitle">Изменить</button></div><div class="hint" style="margin:5px 0 0">Титул — только оформление, он не влияет на игровые механики.</div></div>
       <h2>Избранное</h2><div class="plus-grid" id="plusProfileFavs"></div><div class="plus-empty" id="plusProfileEmpty">Пока ничего не добавлено в избранное</div>
+      <div class="plus-box"><b>Настроить витрину</b><label class="hint" for="dpBio">Описание профиля (до 160 символов)</label><textarea id="dpBio" class="plus-search dp-field" maxlength="160" rows="3" placeholder="Немного о себе…"></textarea><label class="hint" for="dpTheme">Тема</label><select id="dpTheme" class="dp-field"><option value="violet">Violet</option><option value="midnight">Midnight</option><option value="aurora">Aurora</option><option value="sunset">Sunset</option></select><label class="hint" for="dpFrame">Рамка</label><select id="dpFrame" class="dp-field"><option value="none">Без рамки</option><option value="glow">Glow</option><option value="orbit">Orbit</option><option value="pixel">Pixel</option></select><label class="hint" for="dpPrivacy">Видимость профиля</label><select id="dpPrivacy" class="dp-field"><option value="public">Открытый</option><option value="friends">Только друзья</option><option value="private">Закрытый</option></select><button class="btn acc" id="dpSaveProfile">Сохранить оформление</button><div class="hint" id="dpProfileStatus" style="margin:6px 0 0"></div></div>
+      <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Альбомы коллекций</b><button class="btn" id="dpNewAlbum">+ Создать</button></div><input class="plus-search dp-field" id="dpAlbumTitle" maxlength="48" placeholder="Название альбома"><input class="plus-search dp-field" id="dpAlbumDescription" maxlength="180" placeholder="Описание"><div class="hint">В альбом можно добавить до 20 предметов из каталога.</div><div id="dpAlbumList"></div></div>
+      <div class="plus-box"><b>Статистика</b><div class="plus-stats"><div class="plus-stat"><b id="dpStatFriends">0</b><span>ДРУЗЬЯ</span></div><div class="plus-stat"><b id="dpStatAlbums">0</b><span>АЛЬБОМЫ</span></div><div class="plus-stat"><b id="dpStatFavorites">0</b><span>ИЗБРАННОЕ</span></div></div><div class="hint" id="dpJoinedAt"></div></div>
     </section>
     <section class="plus-panel" data-plus-panel="history">
+      <h2>Мой путь</h2><p class="hint" style="margin-top:-5px">Твоя история с момента создания аккаунта</p><div class="plus-box" id="dpJourney"><div class="hint">История появится после синхронизации</div></div>
       <h2>История активности</h2><p class="hint" style="margin-top:-5px">Только действия внутри нового раздела</p>
       <div class="plus-box"><div class="plus-timeline" id="plusTimeline"><div class="plus-friend-empty">Пока событий нет. Добавь карточку в избранное или измени титул профиля.</div></div></div>
     </section>
