@@ -31,6 +31,8 @@ create table if not exists public.depost_plus_friendships (
 );
 create index if not exists depost_plus_friendships_recipient_status on public.depost_plus_friendships(recipient, status);
 create index if not exists depost_plus_friendships_requester_status on public.depost_plus_friendships(requester, status);
+create unique index if not exists depost_plus_friendships_pair_unique
+  on public.depost_plus_friendships(least(requester, recipient), greatest(requester, recipient));
 
 alter table public.depost_plus_profiles enable row level security;
 alter table public.depost_plus_events enable row level security;
