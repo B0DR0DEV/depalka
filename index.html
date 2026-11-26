@@ -1738,7 +1738,7 @@ function plusRenderItems(){
  $('plusTitleStatus').textContent=plusTitleIndex?'ГОТОВО':'В ПРОЦЕССЕ';
 }
 function plusRenderHistory(){
- const labels={favorite_added:'Добавлено в избранное',favorite_removed:'Убрано из избранного',title_changed:'Изменён титул',friend_added:'Добавлен друг',friend_removed:'Удалён друг'};
+ const labels={favorite_added:'Добавлено в избранное',favorite_removed:'Убрано из избранного',title_changed:'Изменён титул',friend_added:'Добавлен друг',friend_removed:'Удалён друг',weekly_badge:'Получен значок недели'};
  $('plusTimeline').innerHTML=plusEvents.length?plusEvents.map(x=>'<div class="plus-event"><time>'+esc(new Date(x.at).toLocaleString('ru-RU'))+'</time><b>'+esc(labels[x.kind]||'Активность')+'</b><p>'+esc(x.detail)+'</p></div>').join(''):'<div class="plus-friend-empty">История пока пуста</div>';
 }
 function plusRenderFriends(){
@@ -1794,7 +1794,8 @@ async function dpRefreshExtra(){
   dpSet('dpJoinedAt',stats.joined_at?'На сайте с '+new Date(stats.joined_at).toLocaleDateString('ru-RU'):'');
   const goals=weekly.goals||{},completed=weekly.completed||0;
   const goalLabels={favorites_3:'Добавить 3 карточки в избранное',custom_profile:'Настроить профиль',album_created:'Создать альбом коллекции',friend_added:'Добавить друга'};
-  $('dpWeeklyGoals').innerHTML=Object.entries(goalLabels).map(([k,label])=>'<div class="dp-social-card"><b>'+(goals[k]?'✓ ':'○ ')+esc(label)+'</b><small>'+(goals[k]?'Выполнено':'В процессе')+'</small></div>').join('');
+  const badgeOwned=(plusServer?.badges||[]).includes(weekly.badge_key);
+  $('dpWeeklyGoals').innerHTML=Object.entries(goalLabels).map(([k,label])=>'<div class="dp-social-card"><b>'+(goals[k]?'✓ ':'○ ')+esc(label)+'</b><small>'+(goals[k]?'Выполнено':'В процессе')+'</small></div>').join('')+(badgeOwned?'<div class="dp-social-card"><b>🏅 Значок недели: Создатель</b><small>Фиксированная награда профиля · без валюты и случайности</small></div>':'');
   const a=plusServer?.achievements||{};
   const secret=[['bio','Немного о себе',!!a.has_bio],['album','Архивариус',!!a.album_created],['friends','Своя компания',!!a.friends_3],['showcase','Куратор витрины',!!a.showcase_full]];
   $('dpSecretAchievements').innerHTML=secret.map(([id,label,done])=>'<div class="dp-social-card"><b>'+(done?'✦ ':'🔒 ')+esc(done?label:'Скрытое достижение')+'</b><small>'+(done?'Открыто':'Продолжай исследовать Depost+')+'</small></div>').join('');
