@@ -351,6 +351,22 @@ html,body{overflow-x:hidden;max-width:100%}
 .dp-spark{position:relative}
 @media(prefers-reduced-motion:reduce){#pg-plus *,#pg-plus *:before,#pg-plus *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
+
+/* Global motion polish, preserving the original palette and layout */
+@media(prefers-reduced-motion:no-preference){
+ body:before{content:"";position:fixed;inset:-35vh -25vw;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 12% 20%,rgba(117,101,255,.10),transparent 34%),radial-gradient(ellipse at 88% 72%,rgba(168,85,247,.08),transparent 32%);animation:dpAmbient 18s ease-in-out infinite alternate}
+ @keyframes dpAmbient{from{transform:translate3d(-1.5%,0,0) scale(1)}to{transform:translate3d(1.5%,1%,0) scale(1.06)}}
+ .ccard,.box,.tglink,.qtile,.lcard,.prow,.stat>div{transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+ .ccard:hover,.box:hover,.tglink:hover,.qtile:hover,.prow:hover{transform:translateY(-2px);border-color:rgba(155,141,255,.24);box-shadow:0 10px 28px rgba(0,0,0,.16)}
+ button{transition:filter .18s ease,transform .18s ease}
+ button:active{filter:brightness(1.12)}
+ .nav button{transition:background .22s ease,color .22s ease,transform .22s ease}
+ .nav button.on{box-shadow:inset 0 0 0 1px rgba(155,141,255,.10),0 0 18px rgba(117,101,255,.12)}
+ .pg.on{animation:dpRise .28s ease both}
+ .banner{background-size:180% 180%;animation:dpBanner 14s ease-in-out infinite alternate}
+ @keyframes dpBanner{from{background-position:0% 50%}to{background-position:100% 50%}}
+}
+
 </style>
 </head>
 <body>
@@ -1805,9 +1821,7 @@ async function dpOpenFriend(uid){
   $('dpProfileReport').onclick=async()=>{const reason=prompt('Причина: spam, harassment, inappropriate или other','other');if(!reason)return;const valid=['spam','harassment','inappropriate','other'];try{await dpRpc('plus_report',{user_id:uid,reason:valid.includes(reason)?reason:'other',details:''});toast('Жалоба отправлена на проверку')}catch(e){toast(errText(e))}};
  }catch(e){toast(errText(e))}
 }
-$('plusFriends').addEventListener('click',e=>{const row=e.target.closest('.friend');if(!row)return;const rm=e.target.closest('[data-plus-friend-remove]');if(!rm){const id=row.querySelector('[data-plus-friend-remove]')?.dataset.plusFriendRemove;if(id)dpOpenFriend(id)}});
-$('plusFriends').addEventListener('dblclick',e=>{const row=e.target.closest('.friend');const id=row?.querySelector('[data-plus-friend-remove]')?.dataset.plusFriendRemove;if(id)dpOpenFriend(id)});
-$('plusFriends').addEventListener('click',e=>{const b=e.target.closest('[data-plus-friend-remove]');if(!b){const row=e.target.closest('.friend');if(row){const name=row.querySelector('b')?.textContent;const f=(plusServer?.friends||[]).find(x=>x.name===name);if(f)dpOpenFriend(f.user_id)}}});
+$('plusFriends').addEventListener('click',e=>{if(e.target.closest('[data-plus-friend-remove]'))return;const row=e.target.closest('.friend');if(!row)return;const id=row.querySelector('[data-plus-friend-remove]')?.dataset.plusFriendRemove;if(id)dpOpenFriend(id)});
 $('plusTabs').addEventListener('click',e=>{const b=e.target.closest('[data-plus-tab]');if(b&&b.dataset.plusTab==='friends')dpRenderDmFriends()});
 $('plusDmFriendList').addEventListener('click',e=>{const b=e.target.closest('[data-dp-dm-open]');if(b)dpOpenDm(b.dataset.dpDmOpen,b.dataset.name)});
 $('plusDmSend').addEventListener('click',async()=>{
