@@ -295,21 +295,27 @@ create or replace function public.api_plus_weekly(p jsonb)
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   u uuid := public.me();
-  fav int;
-  friends int;
-  albums int;
-  customized boolean;
+  week_start_at timestamptz := date_trunc('week',now());
+  fav_events int;
+  profile_events int;
+  album_events int;
+  friend_events int;
   done_count int;
   week_key text := to_char(date_trunc('week',now()),'IYYY-"W"IW');
   badge_key text;
   unlocked boolean := false;
 begin
-  insert into public.depost_plus_profiles(user_id) values(u) on conflict(user_id) do nothing;
-  select cardinality(favorites), (bio<>'' or theme<>'violet' or frame<>'none' or title<>'Коллекционер')
-    into fav,customized from public.depost_plus_profiles where user_id=u;
-  select count(*) into friends from public.depost_plus_friendships where status='accepted' and (requester=u or recipient=u);
-  select count(*) into albums from public.depost_plus_albums where user_id=u;
-  done_count := (case when fav>=3 then 1 else 0 end)+(case when customized then 1 else 0 end)+(case when albums>=1 then 1 else 0 end)+(case when friends>=1 then 1 else 0 end);
+  select count(*) filter(where kind='favorite_added'),
+         count(*) filter(where kind='profile_updated'),
+         count(*) filter(where kind='album_created'),
+         count(*) filter(where kind='friend_added')
+    into fav_events,profile_events,album_events,friend_events
+    from public.depost_plus_events
+    where user_id=u and created_at>=week_start_at;
+  done_count := (case when fav_events>=3 then 1 else 0 end)
+              +(case when profile_events>=1 then 1 else 0 end)
+              +(case when album_events>=1 then 1 else 0 end)
+              +(case when friend_events>=1 then 1 else 0 end);
   badge_key := 'creator_week_'||week_key;
   if done_count=4 then
     update public.depost_plus_profiles set badges=case when badge_key=any(badges) then badges else array_append(badges,badge_key) end where user_id=u;
@@ -319,8 +325,8 @@ begin
     end if;
   end if;
   return jsonb_build_object(
-    'week_start',date_trunc('week',now()),
-    'goals',jsonb_build_object('favorites_3',fav>=3,'custom_profile',customized,'album_created',albums>=1,'friend_added',friends>=1),
+    'week_start',week_start_at,
+    'goals',jsonb_build_object('favorites_3',fav_events>=3,'custom_profile',profile_events>=1,'album_created',album_events>=1,'friend_added',friend_events>=1),
     'completed',done_count,'total',4,'badge_unlocked',unlocked,'badge','Создатель недели','badge_key',badge_key
   );
 end $$;
