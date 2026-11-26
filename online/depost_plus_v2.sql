@@ -311,7 +311,7 @@ end $$;
 
 -- Extend the state payload with profile customization fields for the client.
 create or replace function public.api_plus_state(p jsonb)
-returns jsonb language plpgsql security definer set search_path=public as $
+returns jsonb language plpgsql security definer set search_path=public as $$
 declare u uuid := public.me(); pr public.depost_plus_profiles; fav_count int;
 begin
   insert into public.depost_plus_profiles(user_id) values (u) on conflict (user_id) do nothing;
@@ -335,7 +335,7 @@ begin
     'outgoing',coalesce((select jsonb_agg(jsonb_build_object('request_id',f.id,'user_id',f.recipient,'name',w.name,'color',w.color) order by f.created_at desc)
       from public.depost_plus_friendships f join public.wallets w on w.user_id=f.recipient where f.requester=u and f.status='pending'),'[]'::jsonb)
   );
-end $;
+end $$;
 
 -- Compatibility RPC names used by the existing client (the original migration defines api_plus_*).
 create or replace function public.plus_state(p jsonb default '{}'::jsonb) returns jsonb language sql security definer set search_path=public as $$ select public.api_plus_state(p) $$;
