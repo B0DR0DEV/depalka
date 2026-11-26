@@ -296,7 +296,7 @@ html,body{overflow-x:hidden;max-width:100%}
 .plus-filters button.on{background:var(--acc);border-color:var(--acc);color:#fff}
 .plus-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .plus-item{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:11px;min-width:0}
-.plus-art{height:82px;border-radius:14px;background:linear-gradient(145deg,var(--card2),#242742);display:grid;place-items:center;font-size:36px;margin-bottom:9px}
+.plus-art{height:82px;border-radius:14px;background:linear-gradient(145deg,var(--card2),#242742);display:grid;place-items:center;font-size:36px;margin-bottom:9px;overflow:hidden}.plus-art img{width:100%;height:100%;object-fit:contain;padding:7px}.plus-art .emo{font-size:36px}
 .plus-item b{font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plus-item small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
 .plus-item-foot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:9px}
@@ -495,7 +495,7 @@ html,body{overflow-x:hidden;max-width:100%}
     </div>
     <section class="plus-panel on" data-plus-panel="collection">
       <h2>Каталог предметов</h2><div class="hint" style="margin-top:-5px">Справочник с заранее известными карточками. Здесь нет случайного открытия или ставок.</div>
-      <div class="plus-stats"><div class="plus-stat"><b id="plusFavCount">0</b><span>В ИЗБРАННОМ</span></div><div class="plus-stat"><b>7</b><span>КАРТОЧЕК</span></div><div class="plus-stat"><b>4</b><span>КАТЕГОРИИ</span></div></div>
+      <div class="plus-stats"><div class="plus-stat"><b id="plusFavCount">0</b><span>В ИЗБРАННОМ</span></div><div class="plus-stat"><b id="plusItemCount">0</b><span>КАРТОЧЕК</span></div><div class="plus-stat"><b id="plusCategoryCount">0</b><span>КАТЕГОРИИ</span></div></div>
       <input class="plus-search" id="plusSearch" type="search" placeholder="⌕  Найти предмет в каталоге…">
       <div class="plus-filters" id="plusFilters"><button class="on" data-plus-filter="all">Все</button><button data-plus-filter="legendary">Легендарные</button><button data-plus-filter="epic">Эпические</button><button data-plus-filter="rare">Редкие</button><button data-plus-filter="common">Обычные</button><button data-plus-filter="favorites">Избранное</button></div>
       <div class="plus-grid" id="plusGrid"></div><div class="plus-empty" id="plusEmpty">Ничего не найдено</div>
@@ -1636,34 +1636,27 @@ function runLinks(){if(!bootReady||!S.players.length||(!LINK.pack&&!LINK.code))r
   if(pack)openPackLink(pack);if(code)redeemCode(code)}
 
 /* ===== Depost+ visual-only section ===== */
-const PLUS_ITEMS=[
- {id:'p1',name:'Неоновый импульс',rarity:'epic',label:'Эпический',icon:'⚡'},
- {id:'p2',name:'Лунный знак',rarity:'rare',label:'Редкий',icon:'🌙'},
- {id:'p3',name:'Вихрь',rarity:'common',label:'Обычный',icon:'🌀'},
- {id:'p4',name:'Кристалл',rarity:'legendary',label:'Легендарный',icon:'💎'},
- {id:'p5',name:'Звёздная карта',rarity:'rare',label:'Редкий',icon:'🌌'},
- {id:'p6',name:'Солнечный символ',rarity:'epic',label:'Эпический',icon:'☀️'},
- {id:'p7',name:'Северный свет',rarity:'common',label:'Обычный',icon:'🌠'}
-];
+const PLUS_ITEMS=(()=>{const unique=new Map();ALLITEMS().forEach(it=>{if(!it||!it.id||unique.has(String(it.id)))return;const r=Math.max(0,Math.min(4,+it.r||0));unique.set(String(it.id),{id:String(it.id),name:it.name||'Без названия',rarity:r===4?'legendary':r===3?'epic':r===2?'rare':'common',label:R[r]?.n||'Предмет',item:it,r});});return [...unique.values()]})();
 const PLUS_TITLES=['Коллекционер','Исследователь','Хранитель каталога','Создатель витрины'];
 let plusFilter='all',plusTitleIndex=0;
 let plusFavs=new Set(),plusEvents=[];
 try{plusFavs=new Set(JSON.parse(localStorage.getItem('depost_plus_favs')||'[]'));plusTitleIndex=Math.max(0,Math.min(PLUS_TITLES.length-1,+localStorage.getItem('depost_plus_title')||0));plusEvents=JSON.parse(localStorage.getItem('depost_plus_events')||'[]')}catch(e){}
 function plusSave(){try{localStorage.setItem('depost_plus_favs',JSON.stringify([...plusFavs]));localStorage.setItem('depost_plus_title',String(plusTitleIndex));localStorage.setItem('depost_plus_events',JSON.stringify(plusEvents.slice(0,30)))}catch(e){}}
 function plusLog(title,detail){plusEvents.unshift({title,detail,at:new Date().toLocaleString('ru-RU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})});plusEvents=plusEvents.slice(0,30);plusSave();plusRenderHistory()}
-function plusCard(item,compact=false){const fav=plusFavs.has(item.id);return '<div class="plus-item"><div class="plus-art">'+item.icon+'</div><b>'+esc(item.name)+'</b><small>'+item.label+' · Каталог</small><div class="plus-item-foot"><span class="plus-badge">'+item.label.toUpperCase()+'</span><button class="plus-fav '+(fav?'on':'')+'" data-plus-fav="'+item.id+'">'+(fav?'★ В избранном':'☆ В избранное')+'</button></div></div>'}
+function plusCard(item,compact=false){const fav=plusFavs.has(item.id);return '<div class="plus-item"><div class="plus-art">'+vis(item.item)+'</div><b>'+esc(item.name)+'</b><small>'+esc(item.label)+' · Каталог</small><div class="plus-item-foot"><span class="plus-badge">'+esc(item.label.toUpperCase())+'</span><button class="plus-fav '+(fav?'on':'')+'" data-plus-fav="'+esc(item.id)+'">'+(fav?'★ В избранном':'☆ В избранное')+'</button></div></div>'}
 function plusRenderItems(){
  const q=($('plusSearch')?.value||'').trim().toLowerCase();
  const items=PLUS_ITEMS.filter(x=>(plusFilter==='all'||(plusFilter==='favorites'?plusFavs.has(x.id):x.rarity===plusFilter))&&(!q||x.name.toLowerCase().includes(q)));
  $('plusGrid').innerHTML=items.map(x=>plusCard(x)).join('');
  $('plusEmpty').style.display=items.length?'none':'block';
+ $('plusItemCount').textContent=PLUS_ITEMS.length.toLocaleString('ru-RU');$('plusCategoryCount').textContent=new Set(PLUS_ITEMS.map(x=>x.rarity)).size;
  $('plusFavCount').textContent=plusFavs.size;
  $('plusProgressFav').textContent=plusFavs.size;
  $('plusFavProgress').style.width=Math.min(100,plusFavs.size/3*100)+'%';
  $('plusFavProgressText').textContent=Math.min(3,plusFavs.size)+'/3';
  $('plusWeeklyFavProgress').style.width=Math.min(100,plusFavs.size/2*100)+'%';
  $('plusWeeklyFavText').textContent=Math.min(2,plusFavs.size)+' / 2 предмета';
- $('plusProfileFavs').innerHTML=PLUS_ITEMS.filter(x=>plusFavs.has(x.id)).map(x=>'<div class="plus-item"><div class="plus-art">'+x.icon+'</div><b>'+esc(x.name)+'</b><small>'+x.label+'</small></div>').join('');
+ $('plusProfileFavs').innerHTML=PLUS_ITEMS.filter(x=>plusFavs.has(x.id)).map(x=>'<div class="plus-item"><div class="plus-art">'+vis(x.item)+'</div><b>'+esc(x.name)+'</b><small>'+esc(x.label)+'</small></div>').join('');
  $('plusProfileEmpty').style.display=plusFavs.size?'none':'block';
  $('plusTitleStatus').textContent=plusTitleIndex?'ГОТОВО':'В ПРОЦЕССЕ';
 }
