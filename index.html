@@ -352,6 +352,12 @@ html,body{overflow-x:hidden;max-width:100%}
 @media(prefers-reduced-motion:reduce){#pg-plus *,#pg-plus *:before,#pg-plus *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 
+#pg-plus .plus-cover.dp-theme-midnight{background:linear-gradient(120deg,#171a35,#30365f,#171a35)}
+#pg-plus .plus-cover.dp-theme-aurora{background:linear-gradient(120deg,#164e63,#4c1d95,#164e63)}
+#pg-plus .plus-cover.dp-theme-sunset{background:linear-gradient(120deg,#7c2d12,#be185d,#7c2d12)}
+#pg-plus .plus-avatar.dp-frame-glow{box-shadow:0 0 0 3px var(--acc2),0 0 22px rgba(155,141,255,.65)}
+#pg-plus .plus-avatar.dp-frame-orbit{box-shadow:0 0 0 3px var(--gold),0 0 0 7px rgba(255,207,74,.2)}
+#pg-plus .plus-avatar.dp-frame-pixel{border:3px dashed var(--acc2);border-radius:14px}
 /* Global motion polish, preserving the original palette and layout */
 @media(prefers-reduced-motion:no-preference){
  body{background-image:radial-gradient(ellipse at 12% 20%,rgba(117,101,255,.10),transparent 34%),radial-gradient(ellipse at 88% 72%,rgba(168,85,247,.08),transparent 32%);background-attachment:fixed;background-size:140% 140%;animation:dpAmbient 18s ease-in-out infinite alternate}
@@ -577,7 +583,7 @@ html,body{overflow-x:hidden;max-width:100%}
     </section>
     <section class="plus-panel" data-plus-panel="profile">
       <h2>Витрина профиля</h2><p class="hint" style="margin-top:-5px">Твоё оформление и избранные карточки</p>
-      <div class="plus-box"><div class="plus-cover"></div><div class="plus-profile-line"><div class="plus-avatar" id="plusAvatar">D</div><div style="min-width:0"><b id="plusName" style="font-size:15px">Игрок</b><div class="hint" id="plusTitle" style="margin:3px 0 0">Коллекционер</div></div></div>
+      <div class="plus-box"><div class="plus-cover" id="plusCover"></div><div class="plus-profile-line"><div class="plus-avatar" id="plusAvatar">D</div><div style="min-width:0"><b id="plusName" style="font-size:15px">Игрок</b><div class="hint" id="plusTitle" style="margin:3px 0 0">Коллекционер</div></div></div>
       <div class="plus-row" style="padding:0 10px 8px"><span class="plus-badge">✦ Профиль</span><span class="plus-badge">💠 Каталог</span></div></div>
       <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Титул профиля</b><button class="btn" id="plusChangeTitle">Изменить</button></div><div class="hint" style="margin:5px 0 0">Титул — только оформление, он не влияет на игровые механики.</div></div>
       <h2>Избранное</h2><div class="plus-grid" id="plusProfileFavs"></div><div class="plus-empty" id="plusProfileEmpty">Пока ничего не добавлено в избранное</div>
@@ -1743,6 +1749,8 @@ function renderPlus(){
  $('plusName').textContent=p.name||'Игрок';$('plusTitle').textContent=PLUS_TITLES[plusTitleIndex];
  av.style.background=p.color||'linear-gradient(145deg,#ffe08a,#ff8c55)';
  av.innerHTML=p?avaHTML(p):'D';
+ const cover=$('plusCover');if(cover)cover.className='plus-cover dp-theme-'+(plusServer?.theme||'violet');
+ av.className='plus-avatar dp-frame-'+(plusServer?.frame||'none');
  plusRenderItems();plusRenderHistory();if(plusServer){plusRenderFriends();dpRenderDmFriends();}
 }
 $('plusTabs').addEventListener('click',e=>{const b=e.target.closest('[data-plus-tab]');if(!b)return;
