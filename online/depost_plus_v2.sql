@@ -305,6 +305,34 @@ begin
   );
 end $$;
 
+-- Extend the state payload with profile customization fields for the client.
+create or replace function public.api_plus_state(p jsonb)
+returns jsonb language plpgsql security definer set search_path=public as $
+declare u uuid := public.me(); pr public.depost_plus_profiles; fav_count int;
+begin
+  insert into public.depost_plus_profiles(user_id) values (u) on conflict (user_id) do nothing;
+  select * into pr from public.depost_plus_profiles where user_id = u;
+  fav_count := cardinality(pr.favorites);
+  return jsonb_build_object(
+    'title',pr.title,'favorites',to_jsonb(pr.favorites),'favorite_count',fav_count,
+    'bio',pr.bio,'theme',pr.theme,'frame',pr.frame,'privacy',pr.privacy,'showcase',to_jsonb(pr.showcase),
+    'achievements',jsonb_build_object('profile_started',true,'favorites_3',fav_count>=3,'favorites_10',fav_count>=10,'has_title',pr.title<>'Коллекционер'),
+    'weekly',jsonb_build_object('favorites_2',least(fav_count,2),'title_selected',pr.title<>'Коллекционер'),
+    'history',coalesce((select jsonb_agg(jsonb_build_object('id',e.id,'kind',e.kind,'detail',e.detail,'at',e.created_at) order by e.created_at desc)
+      from (select id,kind,detail,created_at from public.depost_plus_events where user_id=u order by created_at desc limit 30)e),'[]'::jsonb),
+    'friends',coalesce((select jsonb_agg(jsonb_build_object('user_id',w.user_id,'name',w.name,'color',w.color) order by w.name)
+      from public.depost_plus_friendships f join public.wallets w on w.user_id=case when f.requester=u then f.recipient else f.requester end
+      where f.status='accepted' and (f.requester=u or f.recipient=u)
+      and not exists(select 1 from public.depost_plus_blocks b where
+        (b.blocker=u and b.blocked=w.user_id) or (b.blocker=w.user_id and b.blocked=u))
+    ),'[]'::jsonb),
+    'incoming',coalesce((select jsonb_agg(jsonb_build_object('request_id',f.id,'user_id',f.requester,'name',w.name,'color',w.color) order by f.created_at desc)
+      from public.depost_plus_friendships f join public.wallets w on w.user_id=f.requester where f.recipient=u and f.status='pending'),'[]'::jsonb),
+    'outgoing',coalesce((select jsonb_agg(jsonb_build_object('request_id',f.id,'user_id',f.recipient,'name',w.name,'color',w.color) order by f.created_at desc)
+      from public.depost_plus_friendships f join public.wallets w on w.user_id=f.recipient where f.requester=u and f.status='pending'),'[]'::jsonb)
+  );
+end $;
+
 -- Compatibility RPC names used by the existing client (the original migration defines api_plus_*).
 create or replace function public.plus_state(p jsonb default '{}'::jsonb) returns jsonb language sql security definer set search_path=public as $$ select public.api_plus_state(p) $$;
 create or replace function public.plus_favorite(p jsonb) returns jsonb language sql security definer set search_path=public as $$ select public.api_plus_favorite(p) $$;
