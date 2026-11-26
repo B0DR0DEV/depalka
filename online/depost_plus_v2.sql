@@ -320,7 +320,7 @@ begin
   return jsonb_build_object(
     'title',pr.title,'favorites',to_jsonb(pr.favorites),'favorite_count',fav_count,
     'bio',pr.bio,'theme',pr.theme,'frame',pr.frame,'privacy',pr.privacy,'showcase',to_jsonb(pr.showcase),
-    'achievements',jsonb_build_object('profile_started',true,'favorites_3',fav_count>=3,'favorites_10',fav_count>=10,'has_title',pr.title<>'Коллекционер'),
+    'achievements',jsonb_build_object('profile_started',true,'favorites_3',fav_count>=3,'favorites_10',fav_count>=10,'has_title',pr.title<>'Коллекционер','has_bio',pr.bio<>'','album_created',exists(select 1 from public.depost_plus_albums where user_id=u),'friends_3',(select count(*) from public.depost_plus_friendships f where f.status='accepted' and (f.requester=u or f.recipient=u))>=3,'showcase_full',cardinality(pr.showcase)>=4),
     'weekly',jsonb_build_object('favorites_2',least(fav_count,2),'title_selected',pr.title<>'Коллекционер'),
     'history',coalesce((select jsonb_agg(jsonb_build_object('id',e.id,'kind',e.kind,'detail',e.detail,'at',e.created_at) order by e.created_at desc)
       from (select id,kind,detail,created_at from public.depost_plus_events where user_id=u order by created_at desc limit 30)e),'[]'::jsonb),
