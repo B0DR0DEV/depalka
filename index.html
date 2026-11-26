@@ -354,7 +354,7 @@ html,body{overflow-x:hidden;max-width:100%}
 
 /* Global motion polish, preserving the original palette and layout */
 @media(prefers-reduced-motion:no-preference){
- body:before{content:"";position:fixed;inset:-35vh -25vw;z-index:-1;pointer-events:none;background:radial-gradient(ellipse at 12% 20%,rgba(117,101,255,.10),transparent 34%),radial-gradient(ellipse at 88% 72%,rgba(168,85,247,.08),transparent 32%);animation:dpAmbient 18s ease-in-out infinite alternate}
+ body{background-image:radial-gradient(ellipse at 12% 20%,rgba(117,101,255,.10),transparent 34%),radial-gradient(ellipse at 88% 72%,rgba(168,85,247,.08),transparent 32%);background-attachment:fixed;background-size:140% 140%;animation:dpAmbient 18s ease-in-out infinite alternate}
  @keyframes dpAmbient{from{transform:translate3d(-1.5%,0,0) scale(1)}to{transform:translate3d(1.5%,1%,0) scale(1.06)}}
  .ccard,.box,.tglink,.qtile,.lcard,.prow,.stat>div{transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
  .ccard:hover,.box:hover,.tglink:hover,.qtile:hover,.prow:hover{transform:translateY(-2px);border-color:rgba(155,141,255,.24);box-shadow:0 10px 28px rgba(0,0,0,.16)}
@@ -561,7 +561,7 @@ html,body{overflow-x:hidden;max-width:100%}
     </section>
     <section class="plus-panel" data-plus-panel="weekly">
       <h2>События недели</h2><p class="hint" style="margin-top:-5px">Спокойные цели без ставок и случайных наград</p>
-      <div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Неделя коллекционера</b><span class="plus-badge">БЕЗ СТАВОК</span></div><p class="hint">Добавь две карточки в избранное и выбери титул</p><div class="plus-progress"><i id="plusWeeklyProgressBar" style="width:0%"></i></div><div class="hint" id="plusWeeklyProgressText" style="margin:0">0 / 3 шагов</div></div>
+      <div class="plus-box"><b>Секретные достижения</b><p class="hint">Открываются за исследование профиля и коллекции</p><div id="dpSecretAchievements"><div class="hint">Проверяем прогресс…</div></div></div><div class="plus-box"><b>Цели недели</b><div id="dpWeeklyGoals"><div class="hint">Загружаем цели…</div></div></div><div class="plus-box"><div class="plus-row" style="justify-content:space-between"><b>Неделя коллекционера</b><span class="plus-badge">БЕЗ СТАВОК</span></div><p class="hint">Добавь две карточки в избранное и выбери титул</p><div class="plus-progress"><i id="plusWeeklyProgressBar" style="width:0%"></i></div><div class="hint" id="plusWeeklyProgressText" style="margin:0">0 / 3 шагов</div></div>
       <div class="plus-box plus-row"><div class="plus-medal">⭐</div><div><b>Избранное</b><div class="hint" style="margin:3px 0 0">Сохрани 3 карточки каталога</div><div class="plus-progress"><i id="plusWeeklyFav3Bar" style="width:0%"></i></div><div class="hint" id="plusWeeklyFav3Text" style="margin:0">0 / 3 карточки</div></div></div>
       <div class="plus-box plus-row"><div class="plus-medal">🖼️</div><div><b>Витрина</b><div class="hint" style="margin:3px 0 0">Выбери 2 предмета в избранное</div><div class="plus-progress"><i id="plusWeeklyFavProgress" style="width:0%"></i></div><div class="hint" id="plusWeeklyFavText" style="margin:0">0 / 2 предмета</div></div></div>
     </section>
@@ -1779,6 +1779,11 @@ async function dpRefreshExtra(){
   dpSet('dpStatFriends',stats.friends||0);dpSet('dpStatAlbums',stats.albums||0);dpSet('dpStatFavorites',stats.favorites||0);
   dpSet('dpJoinedAt',stats.joined_at?'На сайте с '+new Date(stats.joined_at).toLocaleDateString('ru-RU'):'');
   const goals=weekly.goals||{},completed=weekly.completed||0;
+  const goalLabels={favorites_3:'Добавить 3 карточки в избранное',custom_profile:'Настроить профиль',album_created:'Создать альбом коллекции',friend_added:'Добавить друга'};
+  $('dpWeeklyGoals').innerHTML=Object.entries(goalLabels).map(([k,label])=>'<div class="dp-social-card"><b>'+(goals[k]?'✓ ':'○ ')+esc(label)+'</b><small>'+(goals[k]?'Выполнено':'В процессе')+'</small></div>').join('');
+  const a=plusServer?.achievements||{};
+  const secret=[['bio','Немного о себе',!!a.has_bio],['album','Архивариус',!!a.album_created],['friends','Своя компания',!!a.friends_3],['showcase','Куратор витрины',!!a.showcase_full]];
+  $('dpSecretAchievements').innerHTML=secret.map(([id,label,done])=>'<div class="dp-social-card"><b>'+(done?'✦ ':'🔒 ')+esc(done?label:'Скрытое достижение')+'</b><small>'+(done?'Открыто':'Продолжай исследовать Depost+')+'</small></div>').join('');
   $('dpJourney').innerHTML='<div class="dp-social-card"><b>Начало пути</b><small>'+esc(dpSafeTime(stats.joined_at))+'</small><p class="hint">Аккаунт Depost создан</p></div>'+
    '<div class="dp-social-card"><b>Текущая неделя</b><small>'+completed+'/'+(weekly.total||4)+' целей</small><div class="plus-progress"><i style="width:'+(completed/(weekly.total||4)*100)+'%"></i></div><p class="hint">Избранное: '+(goals.favorites_3?'готово':'в процессе')+' · Оформление: '+(goals.custom_profile?'готово':'в процессе')+' · Альбом: '+(goals.album_created?'готово':'в процессе')+' · Друг: '+(goals.friend_added?'готово':'в процессе')+'</p></div>'+
    (plusEvents||[]).slice(0,8).map(x=>'<div class="dp-social-card"><b>'+esc(x.kind.replaceAll('_',' '))+'</b><small>'+esc(dpSafeTime(x.at))+'</small><p class="hint">'+esc(x.detail)+'</p></div>').join('');
