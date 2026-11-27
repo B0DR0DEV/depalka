@@ -13,7 +13,7 @@ Browser-based low-poly 3D arcade arena for the existing Depost account and inven
 ## Setup
 1. Run `online/arena.sql` in the existing Supabase project's SQL editor. Do not rerun the original installer on a live database.
 2. Deploy `arena-server` on a Node.js 20+ host. Set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `PORT`, and `ALLOWED_ORIGIN`. The key must be the public publishable/anon key, never a service-role key.
-3. Set `GAME_SERVER_URL` in `arena/src/config.js` to the deployed secure WebSocket URL (`wss://...`).
+3. Import `arena-server/render.yaml` as a Blueprint in Render and provide `SUPABASE_ANON_KEY` as the existing Supabase publishable/anon key. Wait for `/health` to return `{\"ok\":true}`.\n4. Confirm the Render service hostname matches `GAME_SERVER_URL` in `arena/src/config.js`, then set `SERVER_READY=true` in that file.\n5. Publish the repository's `arena/` folder with GitHub Pages; open `/arena/`.
 4. Publish the repository's `arena/` folder with GitHub Pages; open `/arena/`.
 
 ## Notes
