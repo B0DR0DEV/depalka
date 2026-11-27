@@ -608,7 +608,7 @@ html,body{overflow-x:hidden;max-width:100%}
   <button data-p="cases" class="on"><span class="free">Бесплатно</span><i>🎁</i>Кейсы</button>
   <button data-p="battle"><i>⚔️</i>Батлы</button>
   <button data-p="wheel"><i>🚀</i>Игры</button>
-  <button data-p="inv"><i>🎒</i>Инвентарь</button><button data-p="plus"><i>✨</i>Плюс</button>
+  <button data-p="inv"><i>🎒</i>Инвентарь</button><button data-p="plus"><i>✨</i>Плюс</button><button data-p="arena"><i>🎮</i>Arena</button>
   <button data-p="more"><i>⚙️</i>Ещё</button>
 </nav>
 
@@ -821,7 +821,7 @@ $('sheetbg').onclick=e=>{if(e.target===$('sheetbg'))closeSheet()};
 let page='cases',curCase=null;
 function go(p){page=p;document.querySelectorAll('.pg').forEach(x=>x.classList.toggle('on',x.id==='pg-'+p));
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===p||(p==='case'&&b.dataset.p==='cases')));window.scrollTo(0,0);render()}
-$('nav').onclick=e=>{const b=e.target.closest('button');if(b&&!gameBusy())go(b.dataset.p)};
+$('nav').onclick=e=>{const b=e.target.closest('button');if(b&&!gameBusy()){if(b.dataset.p==='arena'){location.href='./arena/';return}go(b.dataset.p)}};
 $('bannerBattle').onclick=()=>{setSeg('battle','cb');go('battle')};
 
 /* ===== render ===== */
