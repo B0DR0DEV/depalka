@@ -46,3 +46,7 @@ drop policy if exists arena_results_select_own on public.arena_match_results;
 create policy arena_results_select_own on public.arena_match_results for select to authenticated using(auth.uid()=user_id);
 drop policy if exists arena_results_insert_own on public.arena_match_results;
 create policy arena_results_insert_own on public.arena_match_results for insert to authenticated with check(auth.uid()=user_id);
+
+-- Explicit SQL privileges for authenticated users; RLS policies above still restrict rows to the owner.
+grant select, insert, update, delete on public.arena_loadouts to authenticated;
+grant select, insert on public.arena_match_results to authenticated;
