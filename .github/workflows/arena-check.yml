@@ -1,0 +1,33 @@
+name: Arena checks
+on:
+  push:
+    paths:
+      - "arena/**"
+      - "arena-server/**"
+      - "online/arena.sql"
+      - ".github/workflows/arena-check.yml"
+  pull_request:
+    paths:
+      - "arena/**"
+      - "arena-server/**"
+      - "online/arena.sql"
+      - ".github/workflows/arena-check.yml"
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check browser modules
+        run: |
+          node --check arena/src/config.js
+          node --check arena/src/main.js
+      - name: Install server dependencies
+        working-directory: arena-server
+        run: npm install
+      - name: Check server syntax
+        run: node --check arena-server/src/server.js
+
+# Validates the isolated browser client and the authoritative multiplayer server.
